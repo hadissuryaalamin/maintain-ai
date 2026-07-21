@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-20T10:15:00Z",
+  "provenance": "synthetic",
+  "records": [
+    {
+      "id": "company-a",
+      "name": "Company A",
+      "timezone": "UTC",
+      "currency": "USD"
+    },
+    {
+      "id": "company-b",
+      "name": "Company B",
+      "timezone": "UTC",
+      "currency": "USD"
+    }
+  ]
+}

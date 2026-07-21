@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maintain-ai.local/schemas/users.schema.json",
+  "title": "Synthetic user seed envelope",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "provenance", "records"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "provenance": {"const": "synthetic"},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "tenant_id", "name", "role"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "tenant_id": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "role": {"enum": ["technician", "manager"]}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

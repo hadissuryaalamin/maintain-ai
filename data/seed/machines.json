@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-20T10:15:00Z",
+  "provenance": "synthetic",
+  "records": [
+    {
+      "id": "A1",
+      "tenant_id": "company-a",
+      "name": "Line 3 Servo Press",
+      "model": "SP-400",
+      "line": "Line 3",
+      "status": "stopped",
+      "active_alarm": "E217",
+      "last_status_at": "2026-07-20T10:15:00Z",
+      "criticality": "high",
+      "hourly_downtime_cost": 4800.0,
+      "cost_currency": "USD"
+    },
+    {
+      "id": "A2",
+      "tenant_id": "company-a",
+      "name": "Process Cooling Pump",
+      "model": "CP-200",
+      "line": "Utilities",
+      "status": "running",
+      "condition": "warning",
+      "active_alarm": "VIB-HI",
+      "last_status_at": "2026-07-20T10:15:00Z",
+      "criticality": "medium",
+      "hourly_downtime_cost": 1800.0,
+      "cost_currency": "USD"
+    },
+    {
+      "id": "B1",
+      "tenant_id": "company-b",
+      "name": "Packaging Conveyor",
+      "model": "CV-120",
+      "line": "Packaging Line 1",
+      "status": "stopped",
+      "active_alarm": "TRK-04",
+      "last_status_at": "2026-07-20T10:15:00Z",
+      "criticality": "high",
+      "hourly_downtime_cost": 3200.0,
+      "cost_currency": "USD"
+    },
+    {
+      "id": "B2",
+      "tenant_id": "company-b",
+      "name": "CNC Finish Mill",
+      "model": "CNC-500",
+      "line": "Machine Cell 2",
+      "status": "running",
+      "active_alarm": null,
+      "last_status_at": "2026-07-20T10:15:00Z",
+      "criticality": "medium",
+      "hourly_downtime_cost": 2600.0,
+      "cost_currency": "USD"
+    }
+  ]
+}

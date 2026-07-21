@@ -1,0 +1,48 @@
+# Versioned configuration snapshot. Provider prices can change; verify this file
+# before relying on estimates. Amounts are USD per 1,000,000 tokens unless a
+# field explicitly says otherwise.
+schema_version: "1.0.0"
+currency: USD
+unit: per_1m_tokens
+
+entries:
+  - provider: demo
+    model: demo-maintenance-v1
+    effective_from: "2026-07-21"
+    verified_at: "2026-07-21"
+    source_url: "local://demo-maintenance-v1"
+    input_per_million_tokens: 0.0
+    cached_input_per_million_tokens: 0.0
+    cache_write_multiplier: 1.0
+    output_per_million_tokens: 0.0
+    notes: >-
+      Offline deterministic demo provider. Zero means no provider charge; it
+      does not assign a monetary value to local compute or engineering time.
+
+  - provider: openai
+    model: gpt-5.6-terra
+    effective_from: "2026-07-21"
+    verified_at: "2026-07-21"
+    source_url: "https://developers.openai.com/api/docs/models/gpt-5.6-terra"
+    input_per_million_tokens: 2.50
+    cached_input_per_million_tokens: 0.25
+    cache_write_multiplier: 1.25
+    output_per_million_tokens: 15.00
+    notes: >-
+      Snapshot verified against the cited official model page. Cache writes are
+      represented as a multiplier of uncached input price. Re-verify before use;
+      regional, batch, priority, fine-tuning, or other service terms may differ.
+
+  - provider: openai
+    model: gpt-5.6-luna
+    effective_from: "2026-07-21"
+    verified_at: "2026-07-21"
+    source_url: "https://developers.openai.com/api/docs/models/gpt-5.6-luna"
+    input_per_million_tokens: 1.00
+    cached_input_per_million_tokens: 0.10
+    cache_write_multiplier: 1.25
+    output_per_million_tokens: 6.00
+    notes: >-
+      Snapshot verified against the cited official model page. Cache writes are
+      represented as a multiplier of uncached input price. Re-verify before use;
+      regional, batch, priority, fine-tuning, or other service terms may differ.

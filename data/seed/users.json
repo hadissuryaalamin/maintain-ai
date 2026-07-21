@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-20T10:15:00Z",
+  "provenance": "synthetic",
+  "records": [
+    {
+      "id": "user-a-tech",
+      "tenant_id": "company-a",
+      "name": "Avery Technician",
+      "role": "technician"
+    },
+    {
+      "id": "user-a-manager",
+      "tenant_id": "company-a",
+      "name": "Alex Manager",
+      "role": "manager"
+    },
+    {
+      "id": "user-b-tech",
+      "tenant_id": "company-b",
+      "name": "Bailey Technician",
+      "role": "technician"
+    },
+    {
+      "id": "user-b-manager",
+      "tenant_id": "company-b",
+      "name": "Blair Manager",
+      "role": "manager"
+    }
+  ]
+}

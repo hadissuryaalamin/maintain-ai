@@ -1,0 +1,189 @@
+# Industrial AI Maintenance Operations Copilot
+
+Portfolio-quality, evidence-grounded maintenance decision support built with FastAPI,
+Streamlit, SQLite, and a directly implemented native tool-calling loop. It can inspect
+synthetic machine evidence, search small manual chunks and prior incidents, produce a
+structured preliminary diagnosis, measure model usage/cost, and prepare a work order only
+after explicit human approval.
+
+> **Safety boundary:** this project cannot start, stop, reset, energize, isolate, or otherwise
+> control equipment. It is not a substitute for site procedures, lockout/tagout, an OEM
+> manual, a risk assessment, or a qualified technician.
+
+All included industrial records are synthetic. The default `demo` provider is deterministic,
+offline, and records its token counts as estimated. Set `LLM_PROVIDER=openai` to exercise the
+direct OpenAI Responses API implementation in `app/llm/openai_provider.py`.
+
+## What is included
+
+- Bounded tool-calling agent: request/provider character budgets, step/call/token/time limits,
+  observable retries, cancellation, duplicate-call suppression, controlled errors, and strict
+  structured output.
+- Six typed tools: manual search, current machine status, sensor history, incident search,
+  downtime-cost calculation, and approval-gated draft work-order creation.
+- Security controls: allowlisted tools, authoritative out-of-band tenant context, query-level
+  tenant filters, cross-tenant audit events, untrusted-content delimiters, injection fixtures,
+  approval persistence, and work-order idempotency.
+- Usage and cost telemetry per model request: exact/estimated status, tokens, cache tokens,
+  latency, model/provider, agent step, tool names, status, and versioned price lookup.
+- Privacy-aware telemetry defaults: prompts, free-text tool arguments, and result bodies are
+  redacted; exact approval proposals live in their tenant-scoped workflow record.
+- Three implemented optimization levers: configured small-model routing, bounded retrieval of
+  relevant chunks, and conversation-history trimming. Baseline and optimized runs are measured
+  separately; no savings claim is made without an evaluation result.
+- A Streamlit demo and analytics view, a read-only MCP server reusing the same tools and tenant
+  checks, Docker Compose, GitHub Actions CI, 30 versioned evaluation cases, and operating docs.
+
+## Architecture
+
+```text
+Streamlit UI --HTTP--> FastAPI --> bounded agent loop --> provider adapter
+                         |              |                    |-- demo (offline)
+                         |              |                    `-- OpenAI Responses API
+                         |              |-- typed tool registry + approval gate
+                         |              `-- usage/cost telemetry
+                         `--> tenant-scoped repositories --> SQLite
+
+MCP client --> read-only MCP adapter --> same tool registry and tenant boundary
+```
+
+See [architecture](docs/architecture.md), [security model](docs/security.md), the dated
+[security test report](docs/security-test-report.md), and the
+[native-tool-calling versus MCP note](docs/mcp.md) for design detail.
+
+## Quick start
+
+Requirements: Python 3.12+ and Git. No API key is needed for the offline demo.
+
+```bash
+python -m venv .venv
+# Linux/macOS: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[all,dev]"
+cp .env.example .env  # Windows PowerShell: Copy-Item .env.example .env
+python -m scripts.seed_database
+uvicorn app.main:app --reload
+```
+
+Open `http://127.0.0.1:8000/docs`. In a second shell, start the UI:
+
+```bash
+streamlit run dashboard/app.py
+```
+
+The local demo identity is `company-a` / `user-a-tech`. Identity headers are a development
+convenience, **not production authentication**.
+
+### Submit the example incident
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/incidents/diagnose \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: company-a" \
+  -H "X-User-ID: user-a-tech" \
+  -d '{"message":"Servo press A1 on Line 3 stopped with E217 after changeover."}'
+```
+
+The response includes `diagnostic`, an observable `tool_trace`, and a `usage` summary. It never
+exposes hidden reasoning.
+
+### Exercise approval and idempotency
+
+Ask: `Create a work order for A1 to investigate the overload.` The diagnosis endpoint returns
+`awaiting_approval` and the exact proposal; nothing has been created. Confirm separately:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/approvals/APPROVAL_ID/confirm \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: company-a" \
+  -H "X-User-ID: user-a-tech" \
+  -d '{"approved":true,"idempotency_key":"demo-a1-overload-001"}'
+```
+
+Repeating the same confirmed operation is a replay, not a second work order. Reusing a key for
+different arguments is rejected.
+
+## Use the live OpenAI provider
+
+Copy `.env.example`, set `LLM_PROVIDER=openai` and `OPENAI_API_KEY`, and keep the configured
+model IDs/pricing under review. Live calls use the provider SDK directly and are never part of
+the default test run. The implementation follows the official Responses API patterns for
+[function calling](https://developers.openai.com/api/docs/guides/function-calling) and
+[structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
+Configured prices are dated snapshots linked to their official model pages; reported costs are
+estimates, not invoices.
+
+## Verification
+
+```bash
+ruff check .
+ruff format --check .
+mypy app dashboard evals scripts
+pytest -m "not live" -q
+python -m evals.runner --help
+```
+
+Run the reproducible offline scenario evaluation (30 cases in both modes):
+
+```bash
+python -m evals.runner --dataset evals/cases/v1.json --mode both --backend scenario
+```
+
+This exercises the actual API/agent/telemetry/security workflow with declared synthetic tool
+outcomes injected at a test-only boundary. Use `--backend demo` for seeded-data integration or
+`--backend fixture` for a contract-only harness self-check. Baseline and optimized modes must
+both satisfy the same quality/security checks before a cost reduction can be described as an
+improvement. See the checked-in [scenario report](evals/reports/sample-scenario-comparison-v1.md),
+its [machine-readable results](evals/reports/sample-scenario-comparison-v1.json), and the
+[evaluation instructions](evals/README.md).
+
+On the current synthetic scenario set, optimized mode raises evaluated task completion from
+53.3% to 60.0% and correct tool selection from 86.7% to 93.3%. Grounded-answer scoring is
+100% on its applicable subset (18/18 baseline and 20/20 optimized; 60.0% and 66.7% case
+coverage), and both modes pass all three tenant-isolation and all three injection cases.
+For the 28/30 cases with paired usage, estimated tokens fall 43.0%. The separate 59.4% shadow
+price delta evaluates routing decisions only; it is not a billed-cost, hosted-model-quality, or
+production-savings claim. Failed checks and coverage denominators are listed in the report.
+
+## Docker and MCP
+
+```bash
+docker compose up --build
+```
+
+This starts the API, dashboard, and read-only MCP server with a persistent local SQLite volume.
+To run the MCP server directly in PowerShell, set `$env:MCP_TENANT_ID='company-a'` and
+`$env:MCP_USER_ID='user-a-tech'`, then run `python -m app.mcp_server` (POSIX shells use `export`).
+It exposes selected read-only tools and fixes its trusted demo tenant/user context from process
+environment variables at startup. See
+[deployment](docs/deployment.md) and [MCP usage](docs/mcp.md).
+
+## Repository map
+
+```text
+app/          API, agent, provider, tools, retrieval, security, telemetry, database
+dashboard/    Streamlit incident, approval, trace, and analytics UI
+data/         versioned synthetic manuals and seed records
+evals/        30 cases, deterministic rubric, runner, and reports
+config/       dated model-pricing snapshots
+tests/        unit, API, security, approval, and evaluation tests
+docs/         architecture, security, MCP, deployment, operations, and demo script
+```
+
+## Important limitations
+
+- The local header identity adapter must be replaced by verified OIDC/JWT identity in production.
+- SQLite is for local/demo usage; production needs migrations, PostgreSQL validation, backups,
+  concurrency tests, and appropriate secret management.
+- Lexical retrieval is intentionally transparent and small; it is not a semantic-search claim.
+- Synthetic thresholds and manuals are not valid instructions for real equipment.
+- A successful evaluation demonstrates behavior on this fixture set, not universal safety or
+  diagnostic accuracy.
+
+Operational guidance lives in [operations](docs/operations.md). Security reports should follow
+[SECURITY.md](SECURITY.md). Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

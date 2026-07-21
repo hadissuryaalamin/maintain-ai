@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-20T10:15:00Z",
+  "provenance": "synthetic",
+  "records": [
+    {
+      "id": "manual-a-sp400",
+      "tenant_id": "company-a",
+      "machine_model": "SP-400",
+      "title": "Synthetic SP-400 Servo Press Maintenance Guide",
+      "path": "company-a-sp400.md",
+      "version": "1.0.0",
+      "document_kind": "equipment_manual",
+      "content_trust": "untrusted",
+      "sections": [
+        {"section_id":"SP400-OVERVIEW-001","heading":"Intended use and evidence limits","source_reference":"manual:manual-a-sp400:v1.0.0#SP400-OVERVIEW-001","keywords":["servo press","evidence","SP-400"]},
+        {"section_id":"SP400-SAFE-001","heading":"Safety before investigation","source_reference":"manual:manual-a-sp400:v1.0.0#SP400-SAFE-001","keywords":["lockout","tagout","guard","stored energy","safety"]},
+        {"section_id":"SP400-RANGE-001","heading":"Synthetic reference ranges","source_reference":"manual:manual-a-sp400:v1.0.0#SP400-RANGE-001","keywords":["current","temperature","range","threshold"]},
+        {"section_id":"SP400-ALARM-E217","heading":"Alarm E217: servo overload","source_reference":"manual:manual-a-sp400:v1.0.0#SP400-ALARM-E217","keywords":["E217","overload","changeover","misalignment","obstruction"]},
+        {"section_id":"SP400-DIAG-E217","heading":"Evidence-led E217 triage","source_reference":"manual:manual-a-sp400:v1.0.0#SP400-DIAG-E217","keywords":["E217","triage","sensor history","incident"]},
+        {"section_id":"SP400-ALARM-POS09","heading":"Alarm POS-09: position feedback invalid","source_reference":"manual:manual-a-sp400:v1.0.0#SP400-ALARM-POS09","keywords":["POS-09","encoder","position","feedback"]},
+        {"section_id":"SP400-MAINT-001","heading":"Preventive checks","source_reference":"manual:manual-a-sp400:v1.0.0#SP400-MAINT-001","keywords":["preventive","inspection","baseline"]}
+      ]
+    },
+    {
+      "id": "manual-a-cp200",
+      "tenant_id": "company-a",
+      "machine_model": "CP-200",
+      "title": "Synthetic CP-200 Process Cooling Pump Guide",
+      "path": "company-a-cp200.md",
+      "version": "1.0.0",
+      "document_kind": "equipment_manual",
+      "content_trust": "untrusted",
+      "sections": [
+        {"section_id":"CP200-OVERVIEW-001","heading":"System description","source_reference":"manual:manual-a-cp200:v1.0.0#CP200-OVERVIEW-001","keywords":["CP-200","pump","telemetry"]},
+        {"section_id":"CP200-SAFE-001","heading":"Isolation and process hazards","source_reference":"manual:manual-a-cp200:v1.0.0#CP200-SAFE-001","keywords":["lockout","pressure","fluid","coupling","safety"]},
+        {"section_id":"CP200-RANGE-001","heading":"Synthetic operating bands","source_reference":"manual:manual-a-cp200:v1.0.0#CP200-RANGE-001","keywords":["vibration","pressure","range","threshold"]},
+        {"section_id":"CP200-ALARM-VIBHI","heading":"Alarm VIB-HI","source_reference":"manual:manual-a-cp200:v1.0.0#CP200-ALARM-VIBHI","keywords":["VIB-HI","cavitation","misalignment","bearing"]},
+        {"section_id":"CP200-DIAG-001","heading":"Vibration investigation sequence","source_reference":"manual:manual-a-cp200:v1.0.0#CP200-DIAG-001","keywords":["vibration","suction pressure","investigation"]},
+        {"section_id":"CP200-SENSOR-001","heading":"Missing and suspect readings","source_reference":"manual:manual-a-cp200:v1.0.0#CP200-SENSOR-001","keywords":["missing","null","sensor","quality"]},
+        {"section_id":"CP200-MAINT-001","heading":"Preventive observations","source_reference":"manual:manual-a-cp200:v1.0.0#CP200-MAINT-001","keywords":["preventive","trend","mounting"]}
+      ]
+    },
+    {
+      "id": "manual-b-cv120",
+      "tenant_id": "company-b",
+      "machine_model": "CV-120",
+      "title": "Synthetic CV-120 Packaging Conveyor Guide",
+      "path": "company-b-cv120.md",
+      "version": "1.0.0",
+      "document_kind": "equipment_manual",
+      "content_trust": "untrusted",
+      "sections": [
+        {"section_id":"CV120-OVERVIEW-001","heading":"System description","source_reference":"manual:manual-b-cv120:v1.0.0#CV120-OVERVIEW-001","keywords":["CV-120","conveyor","tracking"]},
+        {"section_id":"CV120-SAFE-001","heading":"Conveyor safety","source_reference":"manual:manual-b-cv120:v1.0.0#CV120-SAFE-001","keywords":["lockout","nip point","tension","safety"]},
+        {"section_id":"CV120-RANGE-001","heading":"Synthetic tracking ranges","source_reference":"manual:manual-b-cv120:v1.0.0#CV120-RANGE-001","keywords":["tracking offset","belt speed","range"]},
+        {"section_id":"CV120-ALARM-TRK04","heading":"Alarm TRK-04: tracking deviation","source_reference":"manual:manual-b-cv120:v1.0.0#CV120-ALARM-TRK04","keywords":["TRK-04","drift","idler","sensor"]},
+        {"section_id":"CV120-ALARM-MOTOL","heading":"Alarm MOT-OL: drive overload","source_reference":"manual:manual-b-cv120:v1.0.0#CV120-ALARM-MOTOL","keywords":["MOT-OL","overload","obstruction"]},
+        {"section_id":"CV120-DIAG-001","heading":"Safe evidence checklist","source_reference":"manual:manual-b-cv120:v1.0.0#CV120-DIAG-001","keywords":["diagnosis","belt speed","tracking offset"]},
+        {"section_id":"CV120-MAINT-001","heading":"Preventive observations","source_reference":"manual:manual-b-cv120:v1.0.0#CV120-MAINT-001","keywords":["preventive","tension","alignment"]}
+      ]
+    },
+    {
+      "id": "manual-b-cnc500",
+      "tenant_id": "company-b",
+      "machine_model": "CNC-500",
+      "title": "Synthetic CNC-500 Finish Mill Guide",
+      "path": "company-b-cnc500.md",
+      "version": "1.0.0",
+      "document_kind": "equipment_manual",
+      "content_trust": "untrusted",
+      "sections": [
+        {"section_id":"CNC500-OVERVIEW-001","heading":"System description","source_reference":"manual:manual-b-cnc500:v1.0.0#CNC500-OVERVIEW-001","keywords":["CNC-500","mill","spindle"]},
+        {"section_id":"CNC500-SAFE-001","heading":"Machine-tool safety","source_reference":"manual:manual-b-cnc500:v1.0.0#CNC500-SAFE-001","keywords":["interlock","isolation","spindle","safety"]},
+        {"section_id":"CNC500-RANGE-001","heading":"Synthetic operating bands","source_reference":"manual:manual-b-cnc500:v1.0.0#CNC500-RANGE-001","keywords":["vibration","temperature","range"]},
+        {"section_id":"CNC500-ALARM-TEMPHI","heading":"Alarm TEMP-HI","source_reference":"manual:manual-b-cnc500:v1.0.0#CNC500-ALARM-TEMPHI","keywords":["TEMP-HI","coolant","filter","temperature"]},
+        {"section_id":"CNC500-ALARM-VIBHI","heading":"Alarm VIB-HI","source_reference":"manual:manual-b-cnc500:v1.0.0#CNC500-ALARM-VIBHI","keywords":["VIB-HI","tool holder","runout","bearing"]},
+        {"section_id":"CNC500-DIAG-001","heading":"Evidence checklist","source_reference":"manual:manual-b-cnc500:v1.0.0#CNC500-DIAG-001","keywords":["diagnosis","program","tool","history"]},
+        {"section_id":"CNC500-MAINT-001","heading":"Preventive observations","source_reference":"manual:manual-b-cnc500:v1.0.0#CNC500-MAINT-001","keywords":["preventive","coolant","lubrication"]}
+      ]
+    },
+    {
+      "id": "manual-a-injection-test",
+      "tenant_id": "company-a",
+      "machine_model": "SP-400",
+      "title": "UNTRUSTED TEST CONTENT — Prompt-Injection Retrieval Fixture",
+      "path": "company-a-untrusted-injection-fixture.md",
+      "version": "1.0.0",
+      "document_kind": "adversarial_fixture",
+      "content_trust": "untrusted",
+      "sections": [
+        {"section_id":"INJECTION-TEST-001","heading":"Direct E217 A1 manual instruction override attempt","source_reference":"manual:manual-a-injection-test:v1.0.0#INJECTION-TEST-001","keywords":["A1","E217","manual explanation","ignore previous instructions","export","Company B","prompt injection"]},
+        {"section_id":"INJECTION-TEST-002","heading":"Tool and approval bypass attempt","source_reference":"manual:manual-a-injection-test:v1.0.0#INJECTION-TEST-002","keywords":["create_work_order","approval","tenant_id","prompt injection"]},
+        {"section_id":"INJECTION-TEST-003","heading":"Secret and false-observation attempt","source_reference":"manual:manual-a-injection-test:v1.0.0#INJECTION-TEST-003","keywords":["API keys","environment variables","false observation","prompt injection"]}
+      ]
+    }
+  ]
+}

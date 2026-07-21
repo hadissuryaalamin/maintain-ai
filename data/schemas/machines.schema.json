@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maintain-ai.local/schemas/machines.schema.json",
+  "title": "Synthetic machine seed envelope",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "provenance", "records"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "provenance": {"const": "synthetic"},
+    "records": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["id", "tenant_id", "name", "model", "line", "status", "hourly_downtime_cost"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[AB][12]$"},
+          "tenant_id": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "model": {"type": "string", "minLength": 1},
+          "line": {"type": "string", "minLength": 1},
+          "status": {"enum": ["running", "warning", "stopped", "maintenance", "offline"]},
+          "condition": {"enum": ["normal", "warning", "alarm", "unknown"]},
+          "hourly_downtime_cost": {"type": "number", "minimum": 0},
+          "cost_currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+          "active_alarm": {"type": ["string", "null"]},
+          "last_status_at": {"type": "string", "format": "date-time"},
+          "criticality": {"enum": ["low", "medium", "high"]}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

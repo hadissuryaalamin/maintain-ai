@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project and development tools
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[all,dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Check formatting
+        run: ruff format --check .
+      - name: Type check
+        run: mypy app dashboard evals scripts
+      - name: Test
+        env:
+          LLM_PROVIDER: demo
+        run: pytest -m "not live" -q
+      - name: Scenario evaluation smoke
+        run: >-
+          python -m evals.runner --dataset evals/cases/v1.json --backend scenario
+          --mode optimized --limit 3 --output evals/reports/ci-scenario.actual.json
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --tag maintain-ai:${{ github.sha }} .

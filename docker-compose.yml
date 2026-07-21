@@ -1,0 +1,114 @@
+name: maintain-ai
+
+x-app-environment: &app-environment
+  APP_ENV: ${APP_ENV:-development}
+  DATABASE_URL: ${COMPOSE_DATABASE_URL:-sqlite:////data/maintain-ai.db}
+  LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+  DEFAULT_MODEL: ${DEFAULT_MODEL:-gpt-5.6-terra}
+  SMALL_MODEL: ${SMALL_MODEL:-gpt-5.6-luna}
+  DEMO_MODEL: ${DEMO_MODEL:-demo-maintenance-v1}
+  MODEL_PRICING_PATH: ${MODEL_PRICING_PATH:-config/model_pricing.yaml}
+  DATA_PATH: ${DATA_PATH:-data}
+  AUTO_SEED: ${AUTO_SEED:-true}
+  MAX_AGENT_STEPS: ${MAX_AGENT_STEPS:-6}
+  MAX_TOOL_CALLS: ${MAX_TOOL_CALLS:-10}
+  REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-45}
+  MAX_OUTPUT_TOKENS: ${MAX_OUTPUT_TOKENS:-1800}
+  MAX_REQUEST_INPUT_CHARACTERS: ${MAX_REQUEST_INPUT_CHARACTERS:-250000}
+  MAX_PROVIDER_INPUT_CHARACTERS: ${MAX_PROVIDER_INPUT_CHARACTERS:-120000}
+  PROVIDER_MAX_RETRIES: ${PROVIDER_MAX_RETRIES:-2}
+  HISTORY_MESSAGE_LIMIT: ${HISTORY_MESSAGE_LIMIT:-8}
+  HISTORY_CHARACTER_LIMIT: ${HISTORY_CHARACTER_LIMIT:-12000}
+  RETRIEVAL_CHUNK_LIMIT: ${RETRIEVAL_CHUNK_LIMIT:-4}
+  BASELINE_RETRIEVAL_CHUNK_LIMIT: ${BASELINE_RETRIEVAL_CHUNK_LIMIT:-12}
+  ALLOW_DEMO_AUTH: ${ALLOW_DEMO_AUTH:-true}
+  STORE_PROMPT_PREVIEW: ${STORE_PROMPT_PREVIEW:-false}
+  STORE_TOOL_PAYLOADS: ${STORE_TOOL_PAYLOADS:-false}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+services:
+  api:
+    build:
+      context: .
+    environment:
+      <<: *app-environment
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    volumes:
+      - maintenance-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+
+  dashboard:
+    build:
+      context: .
+    command:
+      [
+        "streamlit",
+        "run",
+        "dashboard/app.py",
+        "--server.address=0.0.0.0",
+        "--server.port=8501",
+        "--server.headless=true",
+      ]
+    environment:
+      API_BASE_URL: http://api:8000
+      DASHBOARD_ALLOW_API_URL_EDIT: ${DASHBOARD_ALLOW_API_URL_EDIT:-false}
+      DEMO_TENANT_ID: ${DEMO_TENANT_ID:-company-a}
+      DEMO_USER_ID: ${DEMO_USER_ID:-user-a-tech}
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-8501}:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mcp:
+    build:
+      context: .
+    command: ["python", "-m", "app.mcp_server"]
+    environment:
+      <<: *app-environment
+      MCP_TRANSPORT: streamable-http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8001"
+      MCP_TENANT_ID: ${MCP_TENANT_ID:-company-a}
+      MCP_USER_ID: ${MCP_USER_ID:-user-a-tech}
+    ports:
+      - "127.0.0.1:${MCP_PORT:-8001}:8001"
+    volumes:
+      - maintenance-data:/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+
+volumes:
+  maintenance-data:

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maintain-ai.local/schemas/sensor_readings.schema.json",
+  "title": "Synthetic sensor reading seed envelope",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "provenance", "records"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "provenance": {"const": "synthetic"},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "machine_id", "tenant_id", "metric", "value", "unit", "timestamp", "quality"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "machine_id": {"type": "string", "pattern": "^[AB][12]$"},
+          "tenant_id": {"type": "string", "minLength": 1},
+          "metric": {"type": "string", "minLength": 1},
+          "value": {"type": ["number", "null"]},
+          "unit": {"type": "string", "minLength": 1},
+          "timestamp": {"type": "string", "format": "date-time"},
+          "quality": {"enum": ["good", "suspect", "missing"]}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"quality": {"const": "missing"}}, "required": ["quality"]},
+            "then": {"properties": {"value": {"type": "null"}}}
+          }
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

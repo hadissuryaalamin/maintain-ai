@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/maintain-ai/evals/evaluation-dataset-v1.schema.json",
+  "title": "Maintenance copilot evaluation dataset v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dataset_version",
+    "created_on",
+    "provenance",
+    "categories",
+    "cases"
+  ],
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "schema_version": { "const": "1.0.0" },
+    "dataset_version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+    "created_on": { "type": "string", "format": "date" },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_origin", "contains_real_operational_data", "notes"],
+      "properties": {
+        "data_origin": { "const": "synthetic" },
+        "contains_real_operational_data": { "const": false },
+        "notes": { "type": "string", "minLength": 1 }
+      }
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 10,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/category" }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 30,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "$defs": {
+    "category": {
+      "type": "string",
+      "enum": [
+        "normal_diagnostic",
+        "ambiguous_equipment",
+        "missing_sensor_data",
+        "tool_failure_or_timeout",
+        "incorrect_alarm_code",
+        "conflicting_manual_and_incident",
+        "prompt_injection_document",
+        "cross_tenant_access",
+        "state_change_without_approval",
+        "very_long_context"
+      ]
+    },
+    "tenantContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant_id", "user_id", "allowed_machine_ids"],
+      "properties": {
+        "tenant_id": { "type": "string", "enum": ["company-a", "company-b"] },
+        "user_id": { "type": "string", "minLength": 1 },
+        "allowed_machine_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message"],
+      "properties": {
+        "message": { "type": "string", "minLength": 1 },
+        "conversation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "content"],
+            "properties": {
+              "role": { "type": "string", "enum": ["user", "assistant"] },
+              "content": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "toolBehavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "status"],
+      "properties": {
+        "tool": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["success", "no_data", "validation_error", "timeout", "transient_error", "access_denied"]
+        },
+        "result": { "type": ["object", "array", "string", "number", "boolean", "null"] },
+        "error_code": { "type": "string" },
+        "attempts_before_terminal": { "type": "integer", "minimum": 1, "maximum": 3 }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document_id", "source_type", "trust", "content"],
+      "properties": {
+        "document_id": { "type": "string" },
+        "source_type": { "type": "string", "enum": ["manual", "incident_history", "sensor_metadata"] },
+        "trust": { "const": "untrusted" },
+        "content": { "type": "string" },
+        "revision": { "type": "string" },
+        "effective_on": { "type": "string", "format": "date" }
+      }
+    },
+    "generatedContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "item_count", "approximate_tokens", "padding_template", "relevant_items"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["conversation", "manual", "mixed"] },
+        "item_count": { "type": "integer", "minimum": 50 },
+        "approximate_tokens": { "type": "integer", "minimum": 8000 },
+        "padding_template": { "type": "string", "minLength": 1 },
+        "relevant_items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["position", "content", "reference"],
+            "properties": {
+              "position": { "type": "integer", "minimum": 0 },
+              "content": { "type": "string" },
+              "reference": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_behaviors", "retrieved_documents"],
+      "properties": {
+        "tool_behaviors": { "type": "array", "items": { "$ref": "#/$defs/toolBehavior" } },
+        "retrieved_documents": { "type": "array", "items": { "$ref": "#/$defs/document" } },
+        "generated_context": { "$ref": "#/$defs/generatedContext" }
+      }
+    },
+    "toolArgumentSubset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": { "type": "string" },
+        "arguments": { "type": "object" }
+      }
+    },
+    "expectations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_status",
+        "required_tools",
+        "optional_tools",
+        "forbidden_tools",
+        "required_argument_subsets",
+        "required_response_elements",
+        "prohibited_behaviors",
+        "max_tool_calls"
+      ],
+      "properties": {
+        "terminal_status": {
+          "type": "string",
+          "enum": ["completed", "needs_clarification", "controlled_error", "approval_required", "access_denied"]
+        },
+        "required_tools": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "optional_tools": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "forbidden_tools": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "required_argument_subsets": { "type": "array", "items": { "$ref": "#/$defs/toolArgumentSubset" } },
+        "required_response_elements": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "required_source_references": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "forbidden_source_references": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "prohibited_behaviors": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "max_tool_calls": { "type": "integer", "minimum": 0, "maximum": 20 }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check_id"],
+      "properties": {
+        "check_id": { "type": "string" },
+        "parameters": { "type": "object" }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "category",
+        "title",
+        "task_type",
+        "tenant_context",
+        "input",
+        "fixture",
+        "expectations",
+        "checks",
+        "rubric_id",
+        "tags"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+-[0-9]{3}$" },
+        "category": { "$ref": "#/$defs/category" },
+        "title": { "type": "string", "minLength": 1 },
+        "task_type": { "type": "string", "enum": ["diagnosis", "clarification", "security", "action_request"] },
+        "tenant_context": { "$ref": "#/$defs/tenantContext" },
+        "input": { "$ref": "#/$defs/input" },
+        "fixture": { "$ref": "#/$defs/fixture" },
+        "expectations": { "$ref": "#/$defs/expectations" },
+        "checks": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/check" } },
+        "rubric_id": { "const": "maintenance-agent-rubric-v1" },
+        "tags": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    }
+  }
+}
