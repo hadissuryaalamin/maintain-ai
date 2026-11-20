@@ -63,7 +63,7 @@ export function ApprovalCard({ approval, client }: { approval: PendingApproval; 
           <span className="icon text-[20px] text-primary" aria-hidden="true">
             assignment
           </span>
-          Draft work order — needs your approval
+          {decided ? "Draft work order" : "Draft work order — needs your approval"}
         </h3>
         <span
           className={`rounded border px-2 py-0.5 font-mono text-[11px] font-bold uppercase ${

@@ -104,6 +104,32 @@ curl -X POST http://127.0.0.1:8000/api/v1/approvals/APPROVAL_ID/confirm \
 Repeating the same confirmed operation is a replay, not a second work order. Reusing a key for
 different arguments is rejected.
 
+## Technician chat app
+
+`web/` is a chat-first React app for technicians on the shop floor. It works on phones,
+tablets and desktops, with large touch targets for gloved use. It calls the same API as the
+Streamlit dashboard and adds three read-only endpoints for machine context:
+`GET /api/v1/machines`, `GET /api/v1/machines/{id}` and `GET /api/v1/machines/{id}/sensors`.
+
+Requirements: Node 22 and pnpm 9.
+
+Development (two terminals):
+
+```bash
+uvicorn app.main:app --reload          # API on http://127.0.0.1:8000
+pnpm -C web install && pnpm -C web dev # app on http://localhost:5173/app/
+```
+
+Production: `pnpm -C web build` writes `web/dist`, which FastAPI serves at
+`http://localhost:8000/app/` (path configurable with `WEB_DIST_PATH`). The Docker image builds
+it automatically.
+
+The app uses the demo identity headers (pick a demo user in the sidebar), keeps conversation
+history only in the browser, and is read-only decision support: it can propose a draft work
+order for human approval but cannot control equipment. Optional build-time settings:
+`VITE_DEMO_TENANT_ID`, `VITE_DEMO_USER_ID`, `VITE_DASHBOARD_URL` (each answer links to the dashboard with its run id; paste the id into
+the "Run and tool trace" tab).
+
 ## Use the live OpenAI provider
 
 Copy `.env.example`, set `LLM_PROVIDER=openai` and `OPENAI_API_KEY`, and keep the configured

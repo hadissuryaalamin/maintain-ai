@@ -1,3 +1,12 @@
+FROM node:22-slim AS web
+
+WORKDIR /web
+RUN corepack enable
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY web/ ./
+RUN pnpm build
+
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -19,6 +28,7 @@ COPY data ./data
 COPY evals ./evals
 COPY scripts ./scripts
 COPY docs ./docs
+COPY --from=web /web/dist ./web/dist
 
 RUN python -m pip install --upgrade pip \
     && python -m pip install ".[all]"

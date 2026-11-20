@@ -38,6 +38,7 @@ describe("ApprovalCard", () => {
     });
     expect(await screen.findByText("Draft created")).toBeInTheDocument();
     expect(screen.getByText("WO-00042")).toBeInTheDocument();
+    expect(screen.queryByText(/needs your approval/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Approve & create draft" })).toBeNull();
   });
 

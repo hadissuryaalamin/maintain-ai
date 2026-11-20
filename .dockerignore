@@ -18,3 +18,7 @@ htmlcov
 dist
 build
 evals/reports
+web/node_modules
+web/dist
+.stitch
+.superpowers
