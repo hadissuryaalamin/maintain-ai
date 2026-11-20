@@ -214,11 +214,47 @@ The score comes from synthetic AI4I data and is not a calibrated physical failur
 probability, a diagnosis, or a safety clearance. The model-facing tool name retains
 `risk` for the planned interface; that name does not change these limitations.
 
-The tool is registered for the agent's provider schemas when enabled. The deterministic
-DemoProvider has not yet been taught to select it automatically; scenario cases and
-an end-to-end agent test are the next stage. MCP exposure is unchanged. Existing
-30-case evaluation results above predate this integration and are not evidence of
-prediction-tool selection quality.
+When enabled, the deterministic DemoProvider selects the tool for explicit standalone
+requests beginning with `Prediksi kegagalan`, `Predict failure`, `Failure prediction`,
+or `predict_failure_risk`, followed by a single JSON object with the six input fields.
+This demo selection uses parsing rules, not a paid LLM. Missing, invalid, duplicate,
+or extra fields trigger clarification without a prediction request. The ordinary
+OpenAI adapter receives the tool schema automatically when the feature is enabled.
+MCP exposure is unchanged. Existing 30-case evaluation metrics above predate this
+integration and are not prediction-tool selection quality measurements.
+
+For a locally running API on port 8000 with demo authentication, send a request to
+`POST /api/v1/incidents/diagnose` using headers `X-Tenant-ID: company-a` and
+`X-User-ID: user-a-tech`. Example message:
+
+```text
+Prediksi kegagalan menggunakan input berikut:
+{"type":"L","air_temp_k":300,"process_temp_k":310,"rpm":1500,"torque_nm":40,"tool_wear_min":100}
+```
+
+A successful run includes `predict_failure_risk` in `tool_trace` and a grounded
+observation with the returned score and source reference. Prediction-only requests
+do not generate fault hypotheses, work orders, or invasive inspection instructions.
+The demonstration input is not automatically associated with an actual machine.
+Run the laptop API with `python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
+after setting the prediction environment variables above and `LLM_PROVIDER=demo`.
+The Session Manager tunnel must remain running in a separate terminal.
+
+## Prediction integration evaluation
+
+The five-scenario feature-off/on comparison is recorded in
+[the report](evals/reports/prediction-comparison-v1.md), with full responses and
+checks in its JSON sibling. Reproduce it offline with `python -m evals.prediction`.
+It uses the same current agent code in both configurations and a mocked prediction
+endpoint, independently of the existing 30-case baseline/optimized experiment.
+
+The user also completed a live laptop-agent-to-EC2 call: run
+`78e72096-8e73-449e-9146-81e0c7d2e3e8`, tool succeeded in 222 ms, and score
+`0.0005919649847783148` at threshold 0.5. The
+[separate evidence record](evals/reports/prediction-live-check-v1.json) identifies
+this as user-supplied live output, not part of the mocked evaluation. EC2 was
+subsequently stopped. Chatbot UI hosting, public serving, and paid LLM evaluation
+are separate future work rather than prerequisites for this integration.
 
 ## License
 

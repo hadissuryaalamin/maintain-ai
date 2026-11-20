@@ -1,0 +1,944 @@
+{
+  "report_schema": "prediction-comparison-v1",
+  "generated_at_utc": "2026-11-20T10:38:51.272091+00:00",
+  "method": "Controlled feature-off versus feature-on ablation using identical current code",
+  "scope": "Real in-process API/agent/registry; demo provider; mocked prediction HTTP",
+  "network_calls_to_aws_or_paid_models": false,
+  "python_version": "3.14.3",
+  "dataset_sha256": "20c93d1d9b882afbf385d89cafa7fb5c55677f3f32216263bc4c34724bd93807",
+  "dataset": {
+    "schema_version": "prediction-integration-v1",
+    "scope": "Synthetic integration fixtures; scores are not real model predictions.",
+    "cases": [
+      {
+        "id": "prediction-low",
+        "title": "Low synthetic score",
+        "inputs": {
+          "type": "L",
+          "air_temp_k": 300,
+          "process_temp_k": 310,
+          "rpm": 1500,
+          "torque_nm": 40,
+          "tool_wear_min": 100
+        },
+        "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"L\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1500,\"torque_nm\":40,\"tool_wear_min\":100}",
+        "fixture": {
+          "kind": "json",
+          "response": {
+            "failure_score": 0.0005919649847783148,
+            "predicted_label": 0,
+            "threshold": 0.5,
+            "target_policy": "failure_evidence_or_v1"
+          }
+        },
+        "expected_status": "completed"
+      },
+      {
+        "id": "prediction-high",
+        "title": "High synthetic score",
+        "inputs": {
+          "type": "M",
+          "air_temp_k": 300,
+          "process_temp_k": 310,
+          "rpm": 1500,
+          "torque_nm": 60,
+          "tool_wear_min": 220
+        },
+        "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"M\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1500,\"torque_nm\":60,\"tool_wear_min\":220}",
+        "fixture": {
+          "kind": "json",
+          "response": {
+            "failure_score": 0.9,
+            "predicted_label": 1,
+            "threshold": 0.5,
+            "target_policy": "failure_evidence_or_v1"
+          }
+        },
+        "expected_status": "completed"
+      },
+      {
+        "id": "prediction-boundary",
+        "title": "Score exactly at threshold",
+        "inputs": {
+          "type": "H",
+          "air_temp_k": 300,
+          "process_temp_k": 310,
+          "rpm": 1300,
+          "torque_nm": 40,
+          "tool_wear_min": 100
+        },
+        "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"H\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1300,\"torque_nm\":40,\"tool_wear_min\":100}",
+        "fixture": {
+          "kind": "json",
+          "response": {
+            "failure_score": 0.5,
+            "predicted_label": 1,
+            "threshold": 0.5,
+            "target_policy": "failure_evidence_or_v1"
+          }
+        },
+        "expected_status": "completed"
+      },
+      {
+        "id": "prediction-alternate",
+        "title": "Alternate valid sensor input",
+        "inputs": {
+          "type": "L",
+          "air_temp_k": 300,
+          "process_temp_k": 312,
+          "rpm": 1500,
+          "torque_nm": 35,
+          "tool_wear_min": 100
+        },
+        "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"L\",\"air_temp_k\":300,\"process_temp_k\":312,\"rpm\":1500,\"torque_nm\":35,\"tool_wear_min\":100}",
+        "fixture": {
+          "kind": "json",
+          "response": {
+            "failure_score": 0.12,
+            "predicted_label": 0,
+            "threshold": 0.5,
+            "target_policy": "failure_evidence_or_v1"
+          }
+        },
+        "expected_status": "completed"
+      },
+      {
+        "id": "prediction-unavailable",
+        "title": "Prediction service unavailable",
+        "inputs": {
+          "type": "L",
+          "air_temp_k": 300,
+          "process_temp_k": 310,
+          "rpm": 1500,
+          "torque_nm": 40,
+          "tool_wear_min": 100
+        },
+        "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"L\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1500,\"torque_nm\":40,\"tool_wear_min\":100}",
+        "fixture": {
+          "kind": "connect_error"
+        },
+        "expected_status": "failed"
+      }
+    ]
+  },
+  "source_sha256": {
+    "app/__init__.py": "43ca171dfc314e3fd1c61d8164555cfbf223b53ba58276be0a77daf308560102",
+    "app/agent/__init__.py": "9acfeef7c73513cd792531acc53c298a45ec09e4e6699ebbd47dba518c57d011",
+    "app/agent/evidence_signals.py": "21a7518f99baf7556092958ec52c10ab34f573b0b4412c6379b596ba81c15065",
+    "app/agent/grounding.py": "6d6a2fc9b9c3bf3c083dd1c490169d6c417e7e41041d3b3743f370752d2ff3a3",
+    "app/agent/orchestrator.py": "5ba713976637f0615a33ab940c753554f33aecda6dd7b715122e2a03b4eeff83",
+    "app/agent/prompts.py": "0aea6562393ba008988ef4ad3dff74bc146f60d7a35d7036b2c7e1e9b2b5d384",
+    "app/agent/routing.py": "0501bbd8989826eb1d256cc36998daa6b0d168066f04b7d379dd239535df97ae",
+    "app/api/__init__.py": "284cd033a9a2a5ec64e00ea6b0cb629bb08f3d3cc1746e4668515cdcea0b1e47",
+    "app/api/dependencies.py": "d6ef02544998fdc1bdb9c2060a44d886f3a1b0357946272140cf204df95ac500",
+    "app/api/routes.py": "4b140be360086f16cbf2e40dedee2d8ddc4c516f53caf625e4fc0dc1ea138822",
+    "app/config.py": "d309e79263a2631cb7ff4fc4b7a062c96e88483eb4f4e908ecb55d3db8364ac2",
+    "app/db/__init__.py": "2f1ccf53a873db0ec565d8db3a1c8fc09a38272cd7801c0457979b26d9d42253",
+    "app/db/models.py": "7f8565144a745acbdbd776c4e171159bbb4a42afe2b6bba3330dec8d30d99a1f",
+    "app/db/repositories.py": "f71ca82413f35390013a0e5651d0c15cf77468139df24da95c254668bfd00746",
+    "app/db/seed.py": "fdbbd70f9b4bbbb31ae3dd54039743c78717a53ec4bee0a3667f7f1e5900186a",
+    "app/db/session.py": "e7c3c4ac454935643cfe0b5f7c1ee18661df32a2fa9fad87875b7ac0f9be5263",
+    "app/llm/__init__.py": "93b7e15e3eff5d9456a3edb20b7a20d6e7beb716ae1e39d19f814538659fe31f",
+    "app/llm/base.py": "80209d58f365f64fd39c19a88b435fb37de8b30cefb059c7543651dc0b1998d6",
+    "app/llm/demo_provider.py": "fe2542ce96d05b04ebb1357a7eec21b538d036e5a58ce98f60f752ca1325bb09",
+    "app/llm/factory.py": "5efdfc2481d2c0445c5c83a8f65a1c4011308e1c812b96a774a1d884380527aa",
+    "app/llm/openai_provider.py": "ff9665ee493570be06e781a6bee927abce31a7d98d76a2e0babf42ac27ef2e39",
+    "app/main.py": "651871783c1f22419b6ca377767b22a29b249c785034ce8e6e0a0f909cd3bf05",
+    "app/mcp_server.py": "e837e61ec9e91033b2199967fa80969d671056e56f39224089250de264fa2508",
+    "app/prediction_requests.py": "a7b350f7e44382ce44b428c98d1a5987b1a5df534457514d36ae2a44a7f4b0be",
+    "app/retrieval/__init__.py": "648700b8842b3c7fe9b9f31c967f5b833f475e1dbe592b85e38295d3754ecc08",
+    "app/retrieval/service.py": "7530ba9be643da3c5fef6237f636f8a5e46affdedea270e5f02f711a01cd3f86",
+    "app/schemas/__init__.py": "3e505465321e942b8548a25804c12beed2026a93477e1dc5b4de52476010605e",
+    "app/schemas/api.py": "08c9083551124a404e33ca552653b62a3c7d294114ead4b57e73346fd0514ffc",
+    "app/schemas/common.py": "95b8cbe14fbe387d460ab7c45a7b9508a956c09f006f9a3996bab58e32f90953",
+    "app/schemas/diagnostic.py": "6bacd6adc18a7c156c1907e6aea18d0e16fb60e0c97cf33f053cc9258078327d",
+    "app/schemas/prediction.py": "bb6d631fb77f7ddd28f006d09b5f783ab519e848fb46f2f2e4fa009b20433d5f",
+    "app/schemas/tools.py": "435283f5433770acc5de8cb7fb83f763aa18c73e2791c6d12280526174b57c73",
+    "app/security/__init__.py": "5d2de10470ca94965adaa1ef16588442c0a3badf00d4f5c4b5f5887f100f3075",
+    "app/security/approval.py": "efe28ce1f9418c8a2b1894b55fc46ebc857c955f3136773742accd86b361e68e",
+    "app/security/content.py": "f336725ca0565d5ca6cce5c947c4eb1196434e8b69baf15a7e0837852db82512",
+    "app/security/context.py": "ab385d0548342ed6c04891f8e6f23ab7bd50f3d4403775f3cb16f3b6223cd041",
+    "app/telemetry/__init__.py": "67e99ba6e6bea0aaeaa13bb71d28b026d5a79feb39db7e52c1136557988c6316",
+    "app/telemetry/pricing.py": "507a89c200498b3d4d2fddf15e0a9a94b63e766d638c9e3fee2f4546a358e7e4",
+    "app/telemetry/service.py": "27915c0f29ccd512c377d6ff2e685544fa161952e5631a57920268c57d57a49d",
+    "app/tools/__init__.py": "3e4f85621eb19afcb12c1efbe53774a8c1861c4bf34d81e45e9e1229a1b85601",
+    "app/tools/base.py": "241ca58232ba7c490d16b30aa287ef36afe09518f1882484b5da0e0b15e962f9",
+    "app/tools/maintenance.py": "669f7c8f54ea6cd25b637c5ffd5f165f7145ef2b07ce584df9f680bc99acf576",
+    "app/tools/prediction.py": "9edbaf221da36bf2fd3b6eacacf1cad17ec4790f31167d21f43a0b198beef361",
+    "app/tools/registry.py": "e7af0921871e537628504f979dadda3613d521bf22e927192baf2e6d3b64b0c6",
+    "evals/prediction.py": "74c7af41dbc34c4604dd0284f3818b63c7e4f9a2c80bb6690dbec21df2d0ea91"
+  },
+  "variants": {
+    "before_feature_off": {
+      "summary": {
+        "cases": 5,
+        "outcome_conformance_passed": 0,
+        "prediction_cases": 4,
+        "prediction_cases_passed": 0,
+        "failure_cases": 1,
+        "failure_cases_passed": 0,
+        "prediction_http_calls": 0,
+        "estimated_input_tokens": 2825,
+        "estimated_output_tokens": 570,
+        "estimated_cost_usd": "0E-8",
+        "mean_inprocess_request_ms": 28.787
+      },
+      "results": [
+        {
+          "case_id": "prediction-low",
+          "feature_enabled": false,
+          "elapsed_request_ms": 31.908,
+          "http_status": 200,
+          "observed_prediction_inputs": [],
+          "checks": {
+            "expected_terminal_status": false,
+            "prediction_selected_once": false,
+            "exact_inputs_sent_once": false,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": false,
+            "grounded_score_and_label": false,
+            "score_limitation_disclosed": false
+          },
+          "passed": false,
+          "response": {
+            "run_id": "4192ecef-25a6-446f-bbfc-677b91ba8b57",
+            "status": "needs_clarification",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [
+                "No successful tenant-scoped external evidence was available for this run.",
+                "The operator must enable the optional prediction tool first."
+              ],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 1,
+              "input_tokens": 565,
+              "output_tokens": 114,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 1,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-high",
+          "feature_enabled": false,
+          "elapsed_request_ms": 35.387,
+          "http_status": 200,
+          "observed_prediction_inputs": [],
+          "checks": {
+            "expected_terminal_status": false,
+            "prediction_selected_once": false,
+            "exact_inputs_sent_once": false,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": false,
+            "grounded_score_and_label": false,
+            "score_limitation_disclosed": false
+          },
+          "passed": false,
+          "response": {
+            "run_id": "1b354c2f-603d-48fa-aed7-148272a28c06",
+            "status": "needs_clarification",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [
+                "No successful tenant-scoped external evidence was available for this run.",
+                "The operator must enable the optional prediction tool first."
+              ],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 1,
+              "input_tokens": 565,
+              "output_tokens": 114,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-boundary",
+          "feature_enabled": false,
+          "elapsed_request_ms": 24.405,
+          "http_status": 200,
+          "observed_prediction_inputs": [],
+          "checks": {
+            "expected_terminal_status": false,
+            "prediction_selected_once": false,
+            "exact_inputs_sent_once": false,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": false,
+            "grounded_score_and_label": false,
+            "score_limitation_disclosed": false
+          },
+          "passed": false,
+          "response": {
+            "run_id": "6cab5225-8aea-4ff5-bafc-62a78a644bea",
+            "status": "needs_clarification",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [
+                "No successful tenant-scoped external evidence was available for this run.",
+                "The operator must enable the optional prediction tool first."
+              ],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 1,
+              "input_tokens": 565,
+              "output_tokens": 114,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-alternate",
+          "feature_enabled": false,
+          "elapsed_request_ms": 25.77,
+          "http_status": 200,
+          "observed_prediction_inputs": [],
+          "checks": {
+            "expected_terminal_status": false,
+            "prediction_selected_once": false,
+            "exact_inputs_sent_once": false,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": false,
+            "grounded_score_and_label": false,
+            "score_limitation_disclosed": false
+          },
+          "passed": false,
+          "response": {
+            "run_id": "ed46b1e3-42dd-451d-973d-1ef795aeccc9",
+            "status": "needs_clarification",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [
+                "No successful tenant-scoped external evidence was available for this run.",
+                "The operator must enable the optional prediction tool first."
+              ],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 1,
+              "input_tokens": 565,
+              "output_tokens": 114,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-unavailable",
+          "feature_enabled": false,
+          "elapsed_request_ms": 26.463,
+          "http_status": 200,
+          "observed_prediction_inputs": [],
+          "checks": {
+            "expected_terminal_status": false,
+            "prediction_selected_once": false,
+            "exact_inputs_sent_once": false,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "controlled_failed_tool_trace": false,
+            "no_fabricated_prediction": false
+          },
+          "passed": false,
+          "response": {
+            "run_id": "fe518d09-4aa9-403b-b040-7ef5ad9608c7",
+            "status": "needs_clarification",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [
+                "No successful tenant-scoped external evidence was available for this run.",
+                "The operator must enable the optional prediction tool first."
+              ],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 1,
+              "input_tokens": 565,
+              "output_tokens": 114,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        }
+      ]
+    },
+    "after_feature_on": {
+      "summary": {
+        "cases": 5,
+        "outcome_conformance_passed": 5,
+        "prediction_cases": 4,
+        "prediction_cases_passed": 4,
+        "failure_cases": 1,
+        "failure_cases_passed": 1,
+        "prediction_http_calls": 5,
+        "estimated_input_tokens": 6685,
+        "estimated_output_tokens": 815,
+        "estimated_cost_usd": "0E-8",
+        "mean_inprocess_request_ms": 29.199
+      },
+      "results": [
+        {
+          "case_id": "prediction-low",
+          "feature_enabled": true,
+          "elapsed_request_ms": 30.075,
+          "http_status": 200,
+          "observed_prediction_inputs": [
+            {
+              "type": "L",
+              "air_temp_k": 300.0,
+              "process_temp_k": 310.0,
+              "rpm": 1500.0,
+              "torque_nm": 40.0,
+              "tool_wear_min": 100.0
+            }
+          ],
+          "checks": {
+            "expected_terminal_status": true,
+            "prediction_selected_once": true,
+            "exact_inputs_sent_once": true,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": true,
+            "grounded_score_and_label": true,
+            "score_limitation_disclosed": true
+          },
+          "passed": true,
+          "response": {
+            "run_id": "c00245e1-7474-4e88-88a9-d288d2c4bb43",
+            "status": "completed",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                },
+                {
+                  "statement": "The synthetic AI4I model returned failure-evidence score 0.00059196498, predicted class 0, and threshold 0.5 for the supplied inputs under failure_evidence_or_v1. This is not a calibrated physical failure probability, an observed machine condition, or a diagnosis.",
+                  "source_type": "tool",
+                  "source_reference": "tool:predict_failure_risk:722b74ac65e0d21f"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [
+              {
+                "tool_name": "predict_failure_risk",
+                "call_id": "call-d3ec3222-2adc-4719-99b9-e442d27af242",
+                "status": "succeeded",
+                "arguments": {
+                  "type": "L",
+                  "air_temp_k": 300.0,
+                  "process_temp_k": 310.0,
+                  "rpm": 1500.0,
+                  "torque_nm": 40.0,
+                  "tool_wear_min": 100.0
+                },
+                "result_preview": "{\"ok\":true,\"tool_name\":\"predict_failure_risk\",\"data\":{\"failure_score\":0.0005919649847783148,\"predicted_label\":0,\"threshold\":0.5,\"target_policy\":\"failure_evidence_or_v1\",\"source_reference\":\"tool:predict_failure_risk:722b74ac65e0d21f\",\"model_scope\":\"synthetic_ai4i_demo\"},\"error\":null,\"approval_id\":null,\"proposed_action\":null}",
+                "latency_ms": 2,
+                "error_category": null
+              }
+            ],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 2,
+              "input_tokens": 1346,
+              "output_tokens": 161,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 1,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-high",
+          "feature_enabled": true,
+          "elapsed_request_ms": 27.543,
+          "http_status": 200,
+          "observed_prediction_inputs": [
+            {
+              "type": "M",
+              "air_temp_k": 300.0,
+              "process_temp_k": 310.0,
+              "rpm": 1500.0,
+              "torque_nm": 60.0,
+              "tool_wear_min": 220.0
+            }
+          ],
+          "checks": {
+            "expected_terminal_status": true,
+            "prediction_selected_once": true,
+            "exact_inputs_sent_once": true,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": true,
+            "grounded_score_and_label": true,
+            "score_limitation_disclosed": true
+          },
+          "passed": true,
+          "response": {
+            "run_id": "193ad0fa-25b7-4d8b-8f09-9cb4ae7f8a5a",
+            "status": "completed",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                },
+                {
+                  "statement": "The synthetic AI4I model returned failure-evidence score 0.9, predicted class 1, and threshold 0.5 for the supplied inputs under failure_evidence_or_v1. This is not a calibrated physical failure probability, an observed machine condition, or a diagnosis.",
+                  "source_type": "tool",
+                  "source_reference": "tool:predict_failure_risk:de60a0ec6a9e2303"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [
+              {
+                "tool_name": "predict_failure_risk",
+                "call_id": "call-0ef43733-c052-478a-a8c9-a80537540cf5",
+                "status": "succeeded",
+                "arguments": {
+                  "type": "M",
+                  "air_temp_k": 300.0,
+                  "process_temp_k": 310.0,
+                  "rpm": 1500.0,
+                  "torque_nm": 60.0,
+                  "tool_wear_min": 220.0
+                },
+                "result_preview": "{\"ok\":true,\"tool_name\":\"predict_failure_risk\",\"data\":{\"failure_score\":0.9,\"predicted_label\":1,\"threshold\":0.5,\"target_policy\":\"failure_evidence_or_v1\",\"source_reference\":\"tool:predict_failure_risk:de60a0ec6a9e2303\",\"model_scope\":\"synthetic_ai4i_demo\"},\"error\":null,\"approval_id\":null,\"proposed_action\":null}",
+                "latency_ms": 1,
+                "error_category": null
+              }
+            ],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 2,
+              "input_tokens": 1342,
+              "output_tokens": 161,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-boundary",
+          "feature_enabled": true,
+          "elapsed_request_ms": 31.597,
+          "http_status": 200,
+          "observed_prediction_inputs": [
+            {
+              "type": "H",
+              "air_temp_k": 300.0,
+              "process_temp_k": 310.0,
+              "rpm": 1300.0,
+              "torque_nm": 40.0,
+              "tool_wear_min": 100.0
+            }
+          ],
+          "checks": {
+            "expected_terminal_status": true,
+            "prediction_selected_once": true,
+            "exact_inputs_sent_once": true,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": true,
+            "grounded_score_and_label": true,
+            "score_limitation_disclosed": true
+          },
+          "passed": true,
+          "response": {
+            "run_id": "7c614ccf-8e4b-4a0e-8771-95470385105c",
+            "status": "completed",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                },
+                {
+                  "statement": "The synthetic AI4I model returned failure-evidence score 0.5, predicted class 1, and threshold 0.5 for the supplied inputs under failure_evidence_or_v1. This is not a calibrated physical failure probability, an observed machine condition, or a diagnosis.",
+                  "source_type": "tool",
+                  "source_reference": "tool:predict_failure_risk:4584104f0d147828"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [
+              {
+                "tool_name": "predict_failure_risk",
+                "call_id": "call-4ec18880-83b3-496f-b7bb-67157e1c2ca9",
+                "status": "succeeded",
+                "arguments": {
+                  "type": "H",
+                  "air_temp_k": 300.0,
+                  "process_temp_k": 310.0,
+                  "rpm": 1300.0,
+                  "torque_nm": 40.0,
+                  "tool_wear_min": 100.0
+                },
+                "result_preview": "{\"ok\":true,\"tool_name\":\"predict_failure_risk\",\"data\":{\"failure_score\":0.5,\"predicted_label\":1,\"threshold\":0.5,\"target_policy\":\"failure_evidence_or_v1\",\"source_reference\":\"tool:predict_failure_risk:4584104f0d147828\",\"model_scope\":\"synthetic_ai4i_demo\"},\"error\":null,\"approval_id\":null,\"proposed_action\":null}",
+                "latency_ms": 1,
+                "error_category": null
+              }
+            ],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 2,
+              "input_tokens": 1342,
+              "output_tokens": 161,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-alternate",
+          "feature_enabled": true,
+          "elapsed_request_ms": 29.458,
+          "http_status": 200,
+          "observed_prediction_inputs": [
+            {
+              "type": "L",
+              "air_temp_k": 300.0,
+              "process_temp_k": 312.0,
+              "rpm": 1500.0,
+              "torque_nm": 35.0,
+              "tool_wear_min": 100.0
+            }
+          ],
+          "checks": {
+            "expected_terminal_status": true,
+            "prediction_selected_once": true,
+            "exact_inputs_sent_once": true,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "successful_tool_trace": true,
+            "grounded_score_and_label": true,
+            "score_limitation_disclosed": true
+          },
+          "passed": true,
+          "response": {
+            "run_id": "c0eea978-a989-45da-85e6-9d9c8aa8f5cf",
+            "status": "completed",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                },
+                {
+                  "statement": "The synthetic AI4I model returned failure-evidence score 0.12, predicted class 0, and threshold 0.5 for the supplied inputs under failure_evidence_or_v1. This is not a calibrated physical failure probability, an observed machine condition, or a diagnosis.",
+                  "source_type": "tool",
+                  "source_reference": "tool:predict_failure_risk:40a0a8c9731ea7da"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [
+              {
+                "tool_name": "predict_failure_risk",
+                "call_id": "call-c762af46-772b-429f-8776-bd2a03740d2a",
+                "status": "succeeded",
+                "arguments": {
+                  "type": "L",
+                  "air_temp_k": 300.0,
+                  "process_temp_k": 312.0,
+                  "rpm": 1500.0,
+                  "torque_nm": 35.0,
+                  "tool_wear_min": 100.0
+                },
+                "result_preview": "{\"ok\":true,\"tool_name\":\"predict_failure_risk\",\"data\":{\"failure_score\":0.12,\"predicted_label\":0,\"threshold\":0.5,\"target_policy\":\"failure_evidence_or_v1\",\"source_reference\":\"tool:predict_failure_risk:40a0a8c9731ea7da\",\"model_scope\":\"synthetic_ai4i_demo\"},\"error\":null,\"approval_id\":null,\"proposed_action\":null}",
+                "latency_ms": 1,
+                "error_category": null
+              }
+            ],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 2,
+              "input_tokens": 1342,
+              "output_tokens": 161,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        },
+        {
+          "case_id": "prediction-unavailable",
+          "feature_enabled": true,
+          "elapsed_request_ms": 27.322,
+          "http_status": 200,
+          "observed_prediction_inputs": [
+            {
+              "type": "L",
+              "air_temp_k": 300.0,
+              "process_temp_k": 310.0,
+              "rpm": 1500.0,
+              "torque_nm": 40.0,
+              "tool_wear_min": 100.0
+            }
+          ],
+          "checks": {
+            "expected_terminal_status": true,
+            "prediction_selected_once": true,
+            "exact_inputs_sent_once": true,
+            "no_fault_hypotheses": true,
+            "no_equipment_or_work_order_action": true,
+            "controlled_failed_tool_trace": true,
+            "no_fabricated_prediction": true
+          },
+          "passed": true,
+          "response": {
+            "run_id": "db3395e6-cf26-449e-b3aa-22e18d98f249",
+            "status": "failed",
+            "diagnostic": {
+              "incident_summary": "Synthetic AI4I failure-evidence prediction demonstration.",
+              "observations": [
+                {
+                  "statement": "The current incident description was supplied by the user.",
+                  "source_type": "user",
+                  "source_reference": "user:current-message"
+                }
+              ],
+              "possible_causes": [],
+              "recommended_actions": [
+                {
+                  "step": 1,
+                  "action": "Review the supplied inputs and model limitations. A synthetic score does not establish a machine fault or permission to operate equipment.",
+                  "requires_shutdown": false,
+                  "requires_approval": false
+                }
+              ],
+              "missing_information": [
+                "Tool 'predict_failure_risk' did not return usable evidence (error category 'internal'). The failure may be transient. No failure-evidence score was obtained.",
+                "No successful tenant-scoped external evidence was available for this run.",
+                "Evidence collection or model processing did not complete; retry once, then escalate with the run ID if the failure persists."
+              ],
+              "safety_notice": "Preliminary decision support only. Follow site procedures and have a qualified person apply lockout/tagout and verify a zero-energy state before guards are opened or invasive work begins. Never bypass interlocks. This system cannot control machinery."
+            },
+            "pending_approval": null,
+            "tool_trace": [
+              {
+                "tool_name": "predict_failure_risk",
+                "call_id": "call-f7728953-aa3c-43df-9100-e9e16f25de4b",
+                "status": "failed",
+                "arguments": {
+                  "type": "L",
+                  "air_temp_k": 300.0,
+                  "process_temp_k": 310.0,
+                  "rpm": 1500.0,
+                  "torque_nm": 40.0,
+                  "tool_wear_min": 100.0
+                },
+                "result_preview": "{\"ok\":false,\"tool_name\":\"predict_failure_risk\",\"data\":null,\"error\":{\"category\":\"internal\",\"message\":\"Tool failed after transient retries.\",\"retryable\":true},\"approval_id\":null,\"proposed_action\":null}",
+                "latency_ms": 0,
+                "error_category": "internal"
+              }
+            ],
+            "usage": {
+              "model": "demo-maintenance-v1",
+              "provider": "demo",
+              "model_requests": 2,
+              "input_tokens": 1313,
+              "output_tokens": 171,
+              "cached_input_tokens": 0,
+              "estimated_total_cost": "0E-8",
+              "latency_ms": 0,
+              "usage_is_estimated": true
+            },
+            "error": null
+          }
+        }
+      ]
+    }
+  }
+}

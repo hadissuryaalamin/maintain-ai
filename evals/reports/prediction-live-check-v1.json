@@ -1,0 +1,45 @@
+{
+  "schema_version": "prediction-live-check-v1",
+  "evidence_source": "User-pasted live API response in this conversation; not a new agent-executed run",
+  "recorded_date": "2026-11-20",
+  "run_id": "78e72096-8e73-449e-9146-81e0c7d2e3e8",
+  "status": "completed",
+  "provider": "demo",
+  "selection_method": "deterministic request parsing, not a paid LLM",
+  "path": "laptop maintain-ai API -> Session Manager tunnel -> maintain-predict on EC2",
+  "inputs": {
+    "type": "L",
+    "air_temp_k": 300,
+    "process_temp_k": 310,
+    "rpm": 1500,
+    "torque_nm": 40,
+    "tool_wear_min": 100
+  },
+  "prediction": {
+    "failure_score": 0.0005919649847783148,
+    "predicted_label": 0,
+    "threshold": 0.5,
+    "target_policy": "failure_evidence_or_v1"
+  },
+  "source_reference": "tool:predict_failure_risk:722b74ac65e0d21f",
+  "tool_status": "succeeded",
+  "tool_latency_ms": 222,
+  "model_requests": 2,
+  "usage_is_estimated": true,
+  "estimated_input_tokens": 1346,
+  "estimated_output_tokens": 161,
+  "prior_attempt": {
+    "run_id": "c2844e36-30e0-4fe5-b4ce-c32db72846f9",
+    "status": "failed",
+    "observed_issue": "Laptop port 8003 was unreachable; retry succeeded after reopening tunnel"
+  },
+  "current_resource_state": "EC2 Stopped, as subsequently confirmed by user",
+  "limitations": [
+    "Single fabricated input; not a load or concurrency test",
+    "No paid-model selection quality measurement",
+    "Two HIGH image findings remain open",
+    "Score is not calibrated physical failure probability"
+  ],
+  "score_observed_in_agent_statement": 0.00059196498,
+  "full_precision_score_source": "Earlier user-pasted direct tool response for the same inputs"
+}

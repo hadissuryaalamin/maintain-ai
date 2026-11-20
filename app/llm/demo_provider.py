@@ -19,6 +19,11 @@ from app.llm.base import (
     ProviderToolCall,
     ProviderUsage,
 )
+from app.prediction_requests import (
+    PREDICTION_INPUT_GUIDANCE,
+    is_prediction_request,
+    parse_prediction_inputs,
+)
 from app.schemas.diagnostic import (
     Confidence,
     DiagnosticResult,
@@ -84,6 +89,9 @@ class DemoProvider:
         )
         called_names = self._called_tool_names(request.input_items)
 
+        if is_prediction_request(message):
+            return self._prediction_response(request_id, request, message, outputs, called_names)
+
         if machine_id is None:
             return self._diagnostic_response(
                 request_id=request_id,
@@ -116,6 +124,58 @@ class DemoProvider:
             request.input_items,
             message=self._assessment_text(request.input_items),
             machine_id=machine_id,
+        )
+        return self._diagnostic_response(
+            request_id=request_id,
+            request=request,
+            diagnostic=diagnostic,
+            terminal_status=terminal_status,
+        )
+
+    def _prediction_response(
+        self,
+        request_id: str,
+        request: ProviderRequest,
+        message: str,
+        outputs: list[dict[str, Any]],
+        called_names: set[str],
+    ) -> ProviderResponse:
+        enabled = any(tool.get("name") == "predict_failure_risk" for tool in request.tools)
+        guidance = PREDICTION_INPUT_GUIDANCE
+        terminal_status = "needs_clarification"
+        if enabled:
+            try:
+                inputs = parse_prediction_inputs(message)
+            except ValueError:
+                pass
+            else:
+                if "predict_failure_risk" not in called_names:
+                    return self._tool_call_response(
+                        request_id=request_id,
+                        request=request,
+                        calls=[
+                            ProviderToolCall(
+                                call_id=f"call-{uuid4()}",
+                                name="predict_failure_risk",
+                                arguments=inputs.model_dump_json(),
+                            )
+                        ],
+                    )
+                result = self._successful_tool_data(outputs, "predict_failure_risk")
+                terminal_status = "completed" if result is not None else "failed"
+                guidance = "" if result is not None else "Prediction evidence is unavailable."
+        else:
+            guidance = "The operator must enable the optional prediction tool first."
+        diagnostic = DiagnosticResult(
+            incident_summary="Standalone synthetic AI4I prediction request.",
+            observations=[],
+            possible_causes=[],
+            recommended_actions=[],
+            missing_information=[guidance] if guidance else [],
+            safety_notice=(
+                "Synthetic model demonstration only; no equipment was inspected "
+                "and no cause or safety clearance is established."
+            ),
         )
         return self._diagnostic_response(
             request_id=request_id,

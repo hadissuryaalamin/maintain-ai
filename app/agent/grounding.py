@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.agent.evidence_signals import GroundingSignal, render_grounding_signal
+from app.prediction_requests import PREDICTION_INPUT_GUIDANCE, is_prediction_request
 from app.schemas.api import ConversationMessage
 from app.schemas.common import RunStatus
 from app.schemas.diagnostic import (
@@ -228,6 +229,8 @@ def enforce_grounding(
     *,
     retained_history: Sequence[ConversationMessage] = (),
     grounding_signals: Sequence[GroundingSignal] = (),
+    current_message: str = "",
+    prediction_tool_enabled: bool = False,
 ) -> DiagnosticResult:
     """Replace model-authored factual fields and enforce deterministic action safety."""
 
@@ -288,7 +291,14 @@ def enforce_grounding(
             diagnostic,
             "No successful tenant-scoped external evidence was available for this run.",
         )
+    prediction_request = is_prediction_request(current_message)
     status_guidance = _status_missing_information(terminal_status)
+    if prediction_request and terminal_status == RunStatus.NEEDS_CLARIFICATION:
+        status_guidance = (
+            PREDICTION_INPUT_GUIDANCE
+            if prediction_tool_enabled
+            else "The operator must enable the optional prediction tool first."
+        )
     if status_guidance:
         _append_missing_information(diagnostic, status_guidance)
     if provider_action_count:
@@ -305,7 +315,25 @@ def enforce_grounding(
             (f"{unsafe_action_count} unsafe model-recommended action(s) were removed by policy."),
         )
 
-    generated_actions = _deterministic_actions(terminal_status, grounded)
+    prediction_only = prediction_request and all(
+        item.source_reference.startswith("tool:predict_failure_risk:") for item in grounded
+    )
+    if prediction_only:
+        diagnostic.incident_summary = "Synthetic AI4I failure-evidence prediction demonstration."
+        diagnostic.possible_causes = []
+        generated_actions = [
+            RecommendedAction(
+                step=1,
+                action=(
+                    "Review the supplied inputs and model limitations. A synthetic score "
+                    "does not establish a machine fault or permission to operate equipment."
+                ),
+                requires_shutdown=False,
+                requires_approval=False,
+            )
+        ]
+    else:
+        generated_actions = _deterministic_actions(terminal_status, grounded)
     diagnostic.recommended_actions = [
         action.model_copy(
             update={

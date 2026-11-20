@@ -1,0 +1,115 @@
+{
+  "schema_version": "prediction-integration-v1",
+  "scope": "Synthetic integration fixtures; scores are not real model predictions.",
+  "cases": [
+    {
+      "id": "prediction-low",
+      "title": "Low synthetic score",
+      "inputs": {
+        "type": "L",
+        "air_temp_k": 300,
+        "process_temp_k": 310,
+        "rpm": 1500,
+        "torque_nm": 40,
+        "tool_wear_min": 100
+      },
+      "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"L\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1500,\"torque_nm\":40,\"tool_wear_min\":100}",
+      "fixture": {
+        "kind": "json",
+        "response": {
+          "failure_score": 0.0005919649847783148,
+          "predicted_label": 0,
+          "threshold": 0.5,
+          "target_policy": "failure_evidence_or_v1"
+        }
+      },
+      "expected_status": "completed"
+    },
+    {
+      "id": "prediction-high",
+      "title": "High synthetic score",
+      "inputs": {
+        "type": "M",
+        "air_temp_k": 300,
+        "process_temp_k": 310,
+        "rpm": 1500,
+        "torque_nm": 60,
+        "tool_wear_min": 220
+      },
+      "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"M\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1500,\"torque_nm\":60,\"tool_wear_min\":220}",
+      "fixture": {
+        "kind": "json",
+        "response": {
+          "failure_score": 0.9,
+          "predicted_label": 1,
+          "threshold": 0.5,
+          "target_policy": "failure_evidence_or_v1"
+        }
+      },
+      "expected_status": "completed"
+    },
+    {
+      "id": "prediction-boundary",
+      "title": "Score exactly at threshold",
+      "inputs": {
+        "type": "H",
+        "air_temp_k": 300,
+        "process_temp_k": 310,
+        "rpm": 1300,
+        "torque_nm": 40,
+        "tool_wear_min": 100
+      },
+      "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"H\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1300,\"torque_nm\":40,\"tool_wear_min\":100}",
+      "fixture": {
+        "kind": "json",
+        "response": {
+          "failure_score": 0.5,
+          "predicted_label": 1,
+          "threshold": 0.5,
+          "target_policy": "failure_evidence_or_v1"
+        }
+      },
+      "expected_status": "completed"
+    },
+    {
+      "id": "prediction-alternate",
+      "title": "Alternate valid sensor input",
+      "inputs": {
+        "type": "L",
+        "air_temp_k": 300,
+        "process_temp_k": 312,
+        "rpm": 1500,
+        "torque_nm": 35,
+        "tool_wear_min": 100
+      },
+      "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"L\",\"air_temp_k\":300,\"process_temp_k\":312,\"rpm\":1500,\"torque_nm\":35,\"tool_wear_min\":100}",
+      "fixture": {
+        "kind": "json",
+        "response": {
+          "failure_score": 0.12,
+          "predicted_label": 0,
+          "threshold": 0.5,
+          "target_policy": "failure_evidence_or_v1"
+        }
+      },
+      "expected_status": "completed"
+    },
+    {
+      "id": "prediction-unavailable",
+      "title": "Prediction service unavailable",
+      "inputs": {
+        "type": "L",
+        "air_temp_k": 300,
+        "process_temp_k": 310,
+        "rpm": 1500,
+        "torque_nm": 40,
+        "tool_wear_min": 100
+      },
+      "message": "Prediksi kegagalan menggunakan input berikut:\n{\"type\":\"L\",\"air_temp_k\":300,\"process_temp_k\":310,\"rpm\":1500,\"torque_nm\":40,\"tool_wear_min\":100}",
+      "fixture": {
+        "kind": "connect_error"
+      },
+      "expected_status": "failed"
+    }
+  ]
+}

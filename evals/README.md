@@ -4,6 +4,18 @@ This directory contains versioned, synthetic evaluation assets for the Industria
 Maintenance Operations Copilot. It does **not** contain measurements from a live
 model, production equipment, or real maintenance records.
 
+## Prediction integration supplement
+
+`cases/prediction-v1.json` contains five explicitly synthetic cases for the
+optional prediction tool. Run `python -m evals.prediction` to produce
+`reports/prediction-comparison-v1.json` and its Markdown sibling. The comparison
+uses the same current agent with the prediction feature off/on and mocks only
+prediction HTTP. It does not use the older baseline/optimized optimization-mode
+comparison, train XGBoost, call AWS, or call a paid LLM. Fixtures and every actual
+agent/API response are included in the JSON report. The separate
+`reports/prediction-live-check-v1.json` records the user's successful EC2 test;
+it is not a measured row in the synthetic comparison.
+
 ## Contents
 
 - `cases/v1.json` - 30 synthetic cases, with three cases in every category required

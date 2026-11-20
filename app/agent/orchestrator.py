@@ -330,6 +330,8 @@ class MaintenanceAgent:
                     final_status,
                     retained_history=trimmed.messages,
                     grounding_signals=grounding_signals,
+                    current_message=request.message,
+                    prediction_tool_enabled="predict_failure_risk" in self.registry.names,
                 )
                 run.status = final_status
                 run.diagnostic_json = diagnostic.model_dump(mode="json")

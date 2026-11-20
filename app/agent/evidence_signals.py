@@ -24,6 +24,7 @@ _KNOWN_TOOL_NAMES = frozenset(
         "search_incident_history",
         "calculate_downtime_cost",
         "create_work_order",
+        "predict_failure_risk",
     }
 )
 _CODE_TOKEN = re.compile(
@@ -161,6 +162,7 @@ def render_grounding_signal(signal: GroundingSignal) -> str:
         "search_incident_history": " Historical incident evidence remains unavailable.",
         "calculate_downtime_cost": " The downtime-cost estimate remains unavailable.",
         "create_work_order": " No work-order state change was completed.",
+        "predict_failure_risk": " No failure-evidence score was obtained.",
         "unregistered_tool": " No evidence was accepted from that request.",
     }[signal.tool_name]
     return (
