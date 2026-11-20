@@ -12,7 +12,7 @@ export function MachineSelector({
   onSelect(id: string): void;
 }) {
   return (
-    <label className="relative inline-flex min-h-9 items-center gap-1.5 rounded bg-primary/15 px-2 font-mono text-[11px] font-bold text-primary">
+    <label className="relative inline-flex min-h-12 items-center gap-1.5 rounded bg-primary/15 px-3 font-mono text-[11px] font-bold text-primary">
       {selected && <span className={`h-1.5 w-1.5 rounded-full ${toneDot[machineTone(selected)]}`} aria-hidden="true" />}
       <span>{selected ? selected.id : "No machine"}</span>
       <span className="icon text-[14px]" aria-hidden="true">

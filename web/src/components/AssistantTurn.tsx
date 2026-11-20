@@ -1,5 +1,5 @@
-import type { DiagnoseResponse, MachineSummary, PendingApproval } from "../api/types";
-import type { AssistantTurn as AssistantTurnData } from "../state/conversations";
+import type { MachineSummary, PendingApproval } from "../api/types";
+import { hasAnswer, type AssistantTurn as AssistantTurnData } from "../state/conversations";
 import {
   ActionSteps,
   DiagnosisCard,
@@ -49,7 +49,7 @@ function RunLink({ runId }: { runId: string }) {
         href={`${dashboard}?run_id=${encodeURIComponent(runId)}`}
         target="_blank"
         rel="noreferrer"
-        className="font-mono text-[10px] text-on-surface-variant underline hover:text-primary"
+        className="inline-flex min-h-12 items-center px-2 font-mono text-[10px] text-on-surface-variant underline hover:text-primary"
       >
         {label}
       </a>
@@ -60,7 +60,7 @@ function RunLink({ runId }: { runId: string }) {
       type="button"
       title="Copy run id"
       onClick={() => void navigator.clipboard?.writeText(runId).catch(() => undefined)}
-      className="font-mono text-[10px] text-on-surface-variant underline hover:text-primary"
+      className="inline-flex min-h-12 items-center px-2 font-mono text-[10px] text-on-surface-variant underline hover:text-primary"
     >
       {label}
     </button>
@@ -93,16 +93,13 @@ function PendingApprovalNotice({ approval }: { approval: PendingApproval }) {
   );
 }
 
-function hasContent(response: DiagnoseResponse): boolean {
-  return response.diagnostic !== null || response.pending_approval !== null;
-}
-
 export function AssistantTurn({
   turn,
   machine,
   onDraftWorkOrder,
   onRetry,
   onFollowUp,
+  busy = false,
   renderApproval = (approval) => <PendingApprovalNotice approval={approval} />,
 }: {
   turn: AssistantTurnData;
@@ -110,6 +107,7 @@ export function AssistantTurn({
   onDraftWorkOrder(): void;
   onRetry(): void;
   onFollowUp(): void;
+  busy?: boolean;
   renderApproval?: (approval: PendingApproval) => React.ReactNode;
 }) {
   if (turn.state === "pending") {
@@ -142,7 +140,7 @@ export function AssistantTurn({
       <Header at={turn.at} />
       <ToolTrace items={response.tool_trace} />
 
-      {!hasContent(response) && (
+      {!hasAnswer(response) && (
         <ErrorBody
           message={response.error ?? `The assistant could not finish (${response.status}).`}
           runId={response.run_id}
@@ -172,7 +170,8 @@ export function AssistantTurn({
               <button
                 type="button"
                 onClick={onDraftWorkOrder}
-                className="flex h-12 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-bold text-on-primary hover:bg-primary/90"
+                disabled={busy}
+                className="flex h-12 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-bold text-on-primary hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="icon text-[18px]" aria-hidden="true">
                   assignment_add
@@ -196,7 +195,7 @@ export function AssistantTurn({
 
       {response.pending_approval && renderApproval(response.pending_approval)}
 
-      {hasContent(response) && (
+      {hasAnswer(response) && (
         <div className="flex justify-end">
           <RunLink runId={response.run_id} />
         </div>

@@ -39,7 +39,7 @@ export function ApprovalCard({ approval, client }: { approval: PendingApproval; 
         idempotency_key: idempotencyKey.current,
       });
       // Trust the server outcome over the button pressed (e.g. an already-decided approval).
-      setPhase(approved && result.status !== "rejected" ? { kind: "approved", result } : { kind: "rejected" });
+      setPhase(result.status === "rejected" ? { kind: "rejected" } : { kind: "approved", result });
     } catch (error) {
       setPhase({
         kind: "error",

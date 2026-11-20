@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError, type ApiClient, type Identity } from "../api/client";
 import type { DiagnoseResponse } from "../api/types";
-import { diagnoseCompleted } from "../test/fixtures";
+import { diagnoseCompleted, diagnoseFailed } from "../test/fixtures";
 import { ConversationProvider, useConversation } from "./ConversationProvider";
 import { IdentityProvider, useIdentity } from "./identity";
 
@@ -83,6 +83,36 @@ describe("ConversationProvider", () => {
     const turns = result.current.conversation.active.turns;
     expect(turns).toHaveLength(2);
     expect(turns[1]!.role === "assistant" && turns[1]!.state).toBe("done");
+  });
+
+  it("retry works on a completed-but-failed run", async () => {
+    const diagnose = vi
+      .fn()
+      .mockResolvedValueOnce(diagnoseFailed)
+      .mockResolvedValueOnce(diagnoseCompleted);
+    const { result } = setup(() => fakeClient(diagnose));
+    await act(() => result.current.conversation.send("Pump A2 noise"));
+    const failed = result.current.conversation.active.turns[1]!;
+    await act(() => result.current.conversation.retry(failed.id));
+    expect(diagnose).toHaveBeenCalledTimes(2);
+    expect(diagnose.mock.calls[1]![0]).toEqual({ message: "Pump A2 noise", conversation_history: [] });
+    const turns = result.current.conversation.active.turns;
+    expect(turns).toHaveLength(2);
+    expect(turns[1]!.role === "assistant" && turns[1]!.state === "done" && turns[1]!.response.status).toBe(
+      "completed",
+    );
+  });
+
+  it("ignores a second send while a request is pending", async () => {
+    let resolve: (value: DiagnoseResponse) => void = () => undefined;
+    const diagnose = vi.fn().mockReturnValue(new Promise((r) => (resolve = r)));
+    const { result } = setup(() => fakeClient(diagnose));
+    act(() => {
+      void result.current.conversation.send("Draft a work order for A2");
+    });
+    await act(() => result.current.conversation.send("Draft a work order for A2"));
+    expect(diagnose).toHaveBeenCalledTimes(1);
+    await act(async () => resolve(diagnoseCompleted));
   });
 
   it("response after identity switch is discarded", async () => {

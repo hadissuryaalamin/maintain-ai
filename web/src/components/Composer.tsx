@@ -100,7 +100,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               key={prompt}
               type="button"
               onClick={() => insert(prompt)}
-              className="h-9 shrink-0 rounded-full bg-surface-container px-3 font-mono text-[11px] text-on-surface hover:bg-surface-container-high"
+              className="h-12 shrink-0 rounded-full bg-surface-container px-3 font-mono text-[11px] text-on-surface hover:bg-surface-container-high"
             >
               <span className="text-primary" aria-hidden="true">
                 +{" "}

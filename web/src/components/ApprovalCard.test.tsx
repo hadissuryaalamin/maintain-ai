@@ -83,6 +83,15 @@ describe("ApprovalCard", () => {
     expect(screen.queryByRole("button", { name: "Reject" })).toBeNull();
   });
 
+  it("shows the server outcome, not the button pressed", async () => {
+    const decide = vi.fn().mockResolvedValue(approvedResponse);
+    render(<ApprovalCard approval={approval} client={clientWith(decide)} />);
+    await userEvent.click(screen.getByRole("button", { name: "Reject" }));
+    expect(await screen.findByText("Draft created")).toBeInTheDocument();
+    expect(screen.getByText("WO-00042")).toBeInTheDocument();
+    expect(screen.queryByText("Rejected")).toBeNull();
+  });
+
   it("renders only proposed_action fields that exist", () => {
     render(
       <ApprovalCard

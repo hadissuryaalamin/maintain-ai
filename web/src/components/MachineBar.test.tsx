@@ -53,6 +53,20 @@ describe("SensorSparkline", () => {
     expect(points.trim().split(/\s+/)).toHaveLength(2);
   });
 
+  it("skips readings whose quality is not good", () => {
+    const { container } = render(
+      <SensorSparkline
+        readings={[
+          { value: 1.9, quality: "good", recorded_at: "a" },
+          { value: 1.8, quality: "good", recorded_at: "b" },
+          { value: 1.0, quality: "suspect", recorded_at: "c" },
+        ]}
+      />,
+    );
+    const points = container.querySelector("polyline")?.getAttribute("points") ?? "";
+    expect(points.trim().split(/\s+/)).toHaveLength(2);
+  });
+
   it("renders nothing with fewer than two numeric points", () => {
     const { container } = render(
       <SensorSparkline readings={[{ value: 1, quality: "good", recorded_at: "x" }]} />,

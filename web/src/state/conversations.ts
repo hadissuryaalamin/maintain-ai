@@ -60,6 +60,11 @@ export function withMachineContext(text: string, machineId: string | null): stri
   return pattern.test(text) ? text : `[Machine ${machineId}] ${text}`;
 }
 
+/** A response the technician can act on: a diagnostic or an approval to decide. */
+export function hasAnswer(response: DiagnoseResponse): boolean {
+  return response.diagnostic !== null || response.pending_approval !== null;
+}
+
 export function assistantSummary(response: DiagnoseResponse): string {
   return (
     response.diagnostic?.incident_summary ??

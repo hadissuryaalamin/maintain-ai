@@ -14,6 +14,7 @@ import {
   conversationsReducer,
   initialConversations,
   loadConversations,
+  hasAnswer,
   newId,
   saveConversations,
   toHistory,
@@ -55,6 +56,8 @@ export function ConversationProvider({
   const [owner, setOwner] = useState(identityKey);
   const currentKey = useRef(identityKey);
   const inFlight = useRef(new Set<AbortController>());
+  // Conversations with a request in flight; a ref so a same-tick double tap is caught too.
+  const busyConversations = useRef(new Set<string>());
 
   // Identity switch: cancel requests, swap to that identity's stored conversations.
   useEffect(() => {
@@ -62,6 +65,7 @@ export function ConversationProvider({
     currentKey.current = identityKey;
     inFlight.current.forEach((controller) => controller.abort());
     inFlight.current.clear();
+    busyConversations.current.clear();
     dispatch({ type: "loaded", list: loadConversations(tenantId, userId) });
     setOwner(identityKey);
   }, [identityKey, tenantId, userId]);
@@ -83,6 +87,7 @@ export function ConversationProvider({
   const run = useCallback(
     async (conversationId: string, text: string, history: Turn[], conversationMachine: string | null) => {
       const requestKey = currentKey.current;
+      busyConversations.current.add(conversationId);
       const turnId = newId();
       dispatch({ type: "appendPending", conversationId, turnId, at: new Date().toISOString() });
       const controller = new AbortController();
@@ -102,6 +107,7 @@ export function ConversationProvider({
         dispatch({ type: "fail", conversationId, turnId, message: errorMessage(error), retryText: text });
       } finally {
         inFlight.current.delete(controller);
+        if (currentKey.current === requestKey) busyConversations.current.delete(conversationId);
       }
     },
     [client],
@@ -110,7 +116,7 @@ export function ConversationProvider({
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (trimmed.length < 3) return;
+      if (trimmed.length < 3 || busyConversations.current.has(active.id)) return;
       // The machine shown in the header is the machine the technician is talking about.
       const conversationMachine = machineId ?? active.machineId;
       if (conversationMachine !== active.machineId) {
@@ -129,14 +135,21 @@ export function ConversationProvider({
 
   const retry = useCallback(
     async (turnId: string) => {
+      if (busyConversations.current.has(active.id)) return;
       const index = active.turns.findIndex((turn) => turn.id === turnId);
       const turn = active.turns[index];
-      if (!turn || turn.role !== "assistant" || turn.state !== "error") return;
-      dispatch({ type: "removeTurn", conversationId: active.id, turnId });
+      if (!turn || turn.role !== "assistant") return;
       const before = active.turns.slice(0, index);
       const lastUser = before.length - 1;
-      const history = before[lastUser]?.role === "user" ? before.slice(0, lastUser) : before;
-      await run(active.id, turn.retryText, history, machineId ?? active.machineId);
+      const previous = before[lastUser];
+      let text: string;
+      if (turn.state === "error") text = turn.retryText;
+      else if (turn.state === "done" && !hasAnswer(turn.response) && previous?.role === "user")
+        text = previous.text;
+      else return;
+      dispatch({ type: "removeTurn", conversationId: active.id, turnId });
+      const history = previous?.role === "user" ? before.slice(0, lastUser) : before;
+      await run(active.id, text, history, machineId ?? active.machineId);
     },
     [active, machineId, run],
   );

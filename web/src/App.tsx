@@ -138,7 +138,7 @@ function Workspace({ machines }: { machines: MachinesState }) {
       {machines.error && (
         <div role="alert" className="flex items-center justify-between gap-3 bg-status-critical/10 px-4 py-2 text-xs text-status-critical">
           <span>{machines.error}</span>
-          <button type="button" onClick={machines.reload} className="h-9 rounded px-3 font-bold underline">
+          <button type="button" onClick={machines.reload} className="h-12 rounded px-3 font-bold underline">
             Retry
           </button>
         </div>
@@ -158,6 +158,7 @@ function Workspace({ machines }: { machines: MachinesState }) {
               );
             }}
             onFollowUp={() => composer.current?.focus()}
+            busy={conversation.sending}
             renderApproval={(approval) => (
               <ApprovalCard key={approval.approval_id} approval={approval} client={client} />
             )}

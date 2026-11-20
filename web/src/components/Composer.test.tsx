@@ -74,6 +74,12 @@ describe("Composer", () => {
     expect(screen.getByRole("button", { name: /dictate/i })).toBeInTheDocument();
   });
 
+  it("quick chips and machine chip are glove-sized", () => {
+    setup();
+    expect(screen.getByRole("button", { name: QUICK_PROMPTS[0] }).className).toMatch(/(^| )h-12( |$)/);
+    expect(screen.getByRole("combobox", { name: "Machine" }).parentElement!.className).toMatch(/min-h-12/);
+  });
+
   it("shows the disclaimer and the machine chip", () => {
     setup();
     expect(screen.getByText(DISCLAIMER)).toBeInTheDocument();

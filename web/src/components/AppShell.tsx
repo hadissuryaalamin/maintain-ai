@@ -71,7 +71,7 @@ export function AppShell({
       {panelOpen && (
         <div className="fixed inset-0 z-50 xl:hidden" role="dialog" aria-modal="true" aria-label="Machine details">
           <button type="button" aria-label="Close machine details" className="absolute inset-0 bg-black/60" onClick={onClosePanel} />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-hidden rounded-t-2xl bg-surface-container-low shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[360px] lg:rounded-none">
+          <div data-testid="panel-sheet" className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto overscroll-contain rounded-t-2xl bg-surface-container-low shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[360px] lg:rounded-none">
             {panel}
           </div>
         </div>

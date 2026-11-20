@@ -124,6 +124,27 @@ describe("AssistantTurn", () => {
     expect(props.onFollowUp).toHaveBeenCalledOnce();
   });
 
+  it("disables Draft work order while a request is pending", () => {
+    render(
+      wrap(
+        <AssistantTurn
+          turn={done(diagnoseCompleted)}
+          machine={machineA2}
+          busy
+          onDraftWorkOrder={vi.fn()}
+          onRetry={vi.fn()}
+          onFollowUp={vi.fn()}
+        />,
+      ),
+    );
+    expect(screen.getByRole("button", { name: "Draft work order" })).toBeDisabled();
+  });
+
+  it("run link has a glove-sized hit area", () => {
+    renderTurn(done(diagnoseCompleted));
+    expect(screen.getByRole("button", { name: /Run 9566e417/ }).className).toMatch(/min-h-12/);
+  });
+
   it("failed response shows error and run id, no diagnosis card", async () => {
     const { props } = renderTurn(done(diagnoseFailed));
     expect(screen.getByRole("alert")).toHaveTextContent("Model request failed safely.");

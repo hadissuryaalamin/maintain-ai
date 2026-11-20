@@ -1,4 +1,5 @@
 import type { SensorPointOut } from "../api/types";
+import { readingAvailable } from "./status";
 
 export function SensorSparkline({
   readings,
@@ -9,9 +10,8 @@ export function SensorSparkline({
   className?: string;
   stroke?: string;
 }) {
-  const values = readings
-    .map((reading) => reading.value)
-    .filter((value): value is number => value !== null);
+  // Only good-quality readings are plotted; suspect or missing values would draw a false trend.
+  const values = readings.filter(readingAvailable).map((reading) => reading.value);
   if (values.length < 2) return null;
   const min = Math.min(...values);
   const max = Math.max(...values);
