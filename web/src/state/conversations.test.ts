@@ -42,6 +42,15 @@ describe("withMachineContext", () => {
     expect(withMachineContext("pump A22 noise", "A2")).toBe("[Machine A2] pump A22 noise");
     expect(withMachineContext("grinding noise", null)).toBe("grinding noise");
   });
+
+  it("leaves explicit prediction requests untouched", () => {
+    const json = '{"type":"L","air_temp_k":300,"process_temp_k":310,"rpm":1500,"torque_nm":40,"tool_wear_min":100}';
+    for (const prefix of ["Prediksi kegagalan menggunakan input berikut:", "Predict failure", "please predict machine failure", "Failure prediction", "predict_failure_risk"]) {
+      const text = `${prefix}
+${json}`;
+      expect(withMachineContext(text, "A2")).toBe(text);
+    }
+  });
 });
 
 describe("storage", () => {
