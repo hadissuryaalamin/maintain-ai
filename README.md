@@ -298,6 +298,12 @@ this as user-supplied live output, not part of the mocked evaluation. EC2 was
 subsequently stopped. Chatbot UI hosting, public serving, and paid LLM evaluation
 are separate future work rather than prerequisites for this integration.
 
+## Roadmap
+
+The main planned work is in [docs/roadmap.md](docs/roadmap.md): letting model-written answers
+through grounding when every claim cites a real source, and moving the Insights and run-trace
+views into the React app so Streamlit can be removed.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
