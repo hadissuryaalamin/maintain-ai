@@ -12,6 +12,7 @@ from uuid import uuid4
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.config import Settings, get_settings
@@ -59,6 +60,9 @@ def create_app(
         lifespan=lifespan,
     )
     application.include_router(router)
+    web_dist = resolved_settings.web_dist_path
+    if (web_dist / "index.html").is_file():
+        application.mount("/app", StaticFiles(directory=web_dist, html=True), name="web")
 
     @application.middleware("http")
     async def request_context(request: Request, call_next: Any) -> Any:

@@ -17,3 +17,7 @@ build/
 .streamlit/secrets.toml
 evals/reports/*.actual.*
 !evals/reports/.gitkeep
+.stitch/
+.superpowers/
+web/node_modules/
+web/dist/
