@@ -143,7 +143,7 @@ and restart the API.
 |---|---|---|---|
 | `demo` | none | (ignored; offline rules) | `app/llm/demo_provider.py` |
 | `openai` | `OPENAI_API_KEY` | `gpt-5.6-terra` / `gpt-5.6-luna` | Responses API, strict JSON-schema output |
-| `anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-5-5` / `claude-haiku-5-5` | Messages API; the final answer arrives through a forced `submit_diagnostic` tool |
+| `anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-5-5` / `claude-haiku-5-5` | Messages API; the final answer arrives through a `submit_diagnostic` tool (tool choice `auto` plus a protocol instruction) |
 
 API usage is billed per token from the vendor's API account. A ChatGPT or Claude app
 subscription does not include API credit. When credit runs out, runs fail with

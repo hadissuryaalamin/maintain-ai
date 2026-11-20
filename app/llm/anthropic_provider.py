@@ -1,9 +1,11 @@
 """Direct Anthropic Messages API (Claude) adapter.
 
 Translates the provider-neutral conversation to Claude's ``messages`` / ``tool_use`` /
-``tool_result`` shape and back. Claude returns the final ``DiagnosticResult`` through a forced
-``submit_diagnostic`` tool whose input schema is the output schema; the adapter turns that call
-into ``output_text`` so the agent loop validates it exactly like any other provider's answer.
+``tool_result`` shape and back. Claude returns the final ``DiagnosticResult`` through a
+``submit_diagnostic`` tool whose input schema is the output schema. Tool choice stays "auto"
+because current Claude models reject forced tool choice; the system prompt states the protocol.
+The adapter turns that call into ``output_text`` so the agent loop validates it exactly like any
+other provider's answer.
 """
 
 from __future__ import annotations
@@ -197,4 +199,10 @@ def _status_error(exc: anthropic.APIStatusError) -> ProviderError:
         return ProviderError("model provider rejected the request: insufficient credit")
     if status in (401, 403):
         return ProviderError("model provider rejected the request: authentication failed")
+    if status == 404:
+        # Usually a model name from another vendor after switching LLM_PROVIDER.
+        return ProviderError(
+            "model provider rejected the request: model not found; "
+            "check DEFAULT_MODEL and SMALL_MODEL"
+        )
     return ProviderError("model provider rejected the request")

@@ -120,7 +120,7 @@ def _final(payload: Any) -> _Message:
 
 
 @pytest.mark.asyncio
-async def test_tools_include_final_answer_tool_and_force_tool_use() -> None:
+async def test_tools_include_final_answer_tool_and_protocol_instruction() -> None:
     provider, messages = _provider(_final({"incident_summary": "ok"}))
     await provider.generate(_request([UserMessage(text="Check A2")]))
     call = messages.calls[0]
@@ -360,6 +360,11 @@ def _status_error(
             _status_error(anthropic.BadRequestError, 400, "bad schema"),
             ProviderError,
             "rejected the request",
+        ),
+        (
+            _status_error(anthropic.NotFoundError, 404, "model: gpt-5.6-terra"),
+            ProviderError,
+            "model not found; check DEFAULT_MODEL and SMALL_MODEL",
         ),
     ],
 )
