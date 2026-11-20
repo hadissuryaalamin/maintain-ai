@@ -72,10 +72,6 @@ class ToolRegistry:
         return [definition.spec() for definition in self._definitions.values()]
 
     @property
-    def provider_schemas(self) -> list[dict[str, Any]]:
-        return [definition.provider_schema() for definition in self._definitions.values()]
-
-    @property
     def names(self) -> set[str]:
         return set(self._definitions)
 

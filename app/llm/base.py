@@ -80,8 +80,8 @@ def conversation_characters(items: Sequence[ConversationItem]) -> int:
 class ProviderRequest:
     model: str
     instructions: str
-    input_items: list[dict[str, Any]]
-    tools: list[dict[str, Any]]
+    conversation: list[ConversationItem]
+    tools: list[ToolSpec]
     output_schema: dict[str, Any]
     max_output_tokens: int
     # Internal authorization context for local providers. Adapters must never transmit it.
@@ -92,8 +92,9 @@ class ProviderRequest:
 class ProviderResponse:
     request_id: str
     output_text: str
-    tool_calls: list[ProviderToolCall]
-    output_items: list[dict[str, Any]]
+    tool_calls: list[ToolCall]
+    # Items the loop appends to the conversation (tool calls or the final assistant message).
+    items: list[ConversationItem]
     usage: ProviderUsage
     metadata: dict[str, Any] = field(default_factory=dict)
 

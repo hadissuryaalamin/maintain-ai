@@ -13,6 +13,7 @@ from app.llm.base import (
     conversation_characters,
     conversation_to_jsonable,
 )
+from app.tools.base import _strict_provider_schema
 from app.tools.registry import ToolRegistry
 
 
@@ -53,4 +54,6 @@ def test_tool_spec_matches_strict_schema(registry: ToolRegistry) -> None:
         definition = registry.definition(name)
         assert definition is not None
         assert spec.description == definition.description
-        assert spec.parameters == definition.provider_schema()["parameters"]
+        assert spec.parameters == _strict_provider_schema(
+            definition.input_model.model_json_schema()
+        )

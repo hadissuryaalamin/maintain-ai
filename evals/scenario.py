@@ -63,7 +63,7 @@ class RecordingProvider:
             ProviderRequest(
                 model=request.model,
                 instructions=request.instructions,
-                input_items=deepcopy(request.input_items),
+                conversation=list(request.conversation),
                 tools=deepcopy(request.tools),
                 output_schema=deepcopy(request.output_schema),
                 max_output_tokens=request.max_output_tokens,
@@ -159,8 +159,8 @@ def build_scenario_registry_factory(case: dict[str, Any]) -> ToolRegistryFactory
             for name, values in documents_by_tool.items()
         }
         definitions: list[ToolDefinition] = []
-        for schema in production.provider_schemas:
-            name = str(schema["name"])
+        for spec in production.tool_specs:
+            name = spec.name
             original = production.definition(name)
             if original is None:
                 raise RuntimeError(f"Production tool definition disappeared: {name}")

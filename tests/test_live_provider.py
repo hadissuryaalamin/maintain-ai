@@ -7,7 +7,7 @@ import os
 import pytest
 
 from app.config import Settings
-from app.llm.base import ProviderRequest
+from app.llm.base import ProviderRequest, UserMessage
 from app.llm.openai_provider import OpenAIResponsesProvider
 from app.schemas.diagnostic import DiagnosticResult
 
@@ -28,11 +28,8 @@ async def test_live_openai_structured_response_smoke() -> None:
                 "Return a short maintenance diagnostic in the supplied JSON schema. "
                 "Do not call tools and do not claim any machine observation."
             ),
-            input_items=[
-                {
-                    "role": "user",
-                    "content": "A synthetic machine has an unspecified unusual noise.",
-                }
+            conversation=[
+                UserMessage(text="A synthetic machine has an unspecified unusual noise.")
             ],
             tools=[],
             output_schema=DiagnosticResult.model_json_schema(),

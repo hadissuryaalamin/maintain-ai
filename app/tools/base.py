@@ -38,16 +38,6 @@ class ToolDefinition:
             parameters=_strict_provider_schema(self.input_model.model_json_schema()),
         )
 
-    def provider_schema(self) -> dict[str, Any]:
-        schema = _strict_provider_schema(self.input_model.model_json_schema())
-        return {
-            "type": "function",
-            "name": self.name,
-            "description": self.description,
-            "parameters": schema,
-            "strict": True,
-        }
-
 
 def _strict_provider_schema(value: Any) -> Any:
     """Normalize Pydantic JSON Schema for strict native function calling.

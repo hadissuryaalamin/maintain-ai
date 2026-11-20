@@ -1,11 +1,12 @@
 """Direct OpenAI Responses API adapter.
 
-The orchestration remains application code: this adapter only translates typed requests and
-responses to the provider SDK. It deliberately does not use an agent framework.
+The orchestration remains application code: this adapter only translates the provider-neutral
+conversation to the Responses API and back. It deliberately does not use an agent framework.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from openai import (
@@ -18,14 +19,54 @@ from openai import (
 
 from app.config import Settings
 from app.llm.base import (
+    AssistantMessage,
+    ConversationItem,
     ProviderError,
     ProviderRequest,
     ProviderResponse,
     ProviderTimeoutError,
-    ProviderToolCall,
     ProviderTransientError,
     ProviderUsage,
+    ToolCall,
+    ToolSpec,
+    UserMessage,
 )
+
+
+def to_responses_input(items: Sequence[ConversationItem]) -> list[dict[str, Any]]:
+    converted: list[dict[str, Any]] = []
+    for item in items:
+        if isinstance(item, UserMessage):
+            converted.append({"role": "user", "content": item.text})
+        elif isinstance(item, AssistantMessage):
+            converted.append({"role": "assistant", "content": item.text})
+        elif isinstance(item, ToolCall):
+            converted.append(
+                {
+                    "type": "function_call",
+                    "call_id": item.call_id,
+                    "name": item.name,
+                    "arguments": item.arguments,
+                }
+            )
+        else:  # ToolResult
+            converted.append(
+                {"type": "function_call_output", "call_id": item.call_id, "output": item.output}
+            )
+    return converted
+
+
+def to_responses_tools(specs: Sequence[ToolSpec]) -> list[dict[str, Any]]:
+    return [
+        {
+            "type": "function",
+            "name": spec.name,
+            "description": spec.description,
+            "parameters": spec.parameters,
+            "strict": True,
+        }
+        for spec in specs
+    ]
 
 
 class OpenAIResponsesProvider:
@@ -51,8 +92,8 @@ class OpenAIResponsesProvider:
             request_payload: Any = {
                 "model": request.model,
                 "instructions": request.instructions,
-                "input": request.input_items,
-                "tools": request.tools,
+                "input": to_responses_input(request.conversation),
+                "tools": to_responses_tools(request.tools),
                 "max_output_tokens": request.max_output_tokens,
                 "text": {
                     "format": {
@@ -76,23 +117,22 @@ class OpenAIResponsesProvider:
         except Exception as exc:
             raise ProviderError("model provider request failed") from exc
 
-        output_items = [item.model_dump(mode="json", exclude_none=True) for item in response.output]
         tool_calls = [
-            ProviderToolCall(
-                call_id=item.call_id,
-                name=item.name,
-                arguments=item.arguments,
-            )
+            ToolCall(call_id=item.call_id, name=item.name, arguments=item.arguments)
             for item in response.output
             if item.type == "function_call"
         ]
+        output_text = response.output_text or ""
+        items: list[ConversationItem] = list(tool_calls)
+        if output_text and not tool_calls:
+            items.append(AssistantMessage(text=output_text))
         usage = response.usage
         details = getattr(usage, "input_tokens_details", None) if usage else None
         return ProviderResponse(
             request_id=response.id,
-            output_text=response.output_text or "",
+            output_text=output_text,
             tool_calls=tool_calls,
-            output_items=output_items,
+            items=items,
             usage=ProviderUsage(
                 input_tokens=getattr(usage, "input_tokens", None),
                 output_tokens=getattr(usage, "output_tokens", None),

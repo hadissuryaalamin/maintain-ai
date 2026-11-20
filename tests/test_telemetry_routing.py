@@ -80,7 +80,7 @@ def _provider_response(request_id: str, usage: ProviderUsage) -> ProviderRespons
         request_id=request_id,
         output_text="{}",
         tool_calls=[],
-        output_items=[],
+        items=[],
         usage=usage,
     )
 

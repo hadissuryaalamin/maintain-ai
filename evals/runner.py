@@ -1272,6 +1272,10 @@ def _evaluate_demo_check(
 
 
 def _summarize_provider_requests(requests: list[Any], case: dict[str, Any]) -> dict[str, Any]:
+    from dataclasses import asdict
+
+    from app.llm.base import AssistantMessage, ToolResult, UserMessage, conversation_to_jsonable
+
     required_references = {
         str(value)
         for check in case["checks"]
@@ -1283,29 +1287,29 @@ def _summarize_provider_requests(requests: list[Any], case: dict[str, Any]) -> d
     max_documents = 0
     max_characters = 0
     for request in requests:
-        serialized = json.dumps(request.input_items, ensure_ascii=False)
+        serialized = json.dumps(conversation_to_jsonable(request.conversation), ensure_ascii=False)
         available_references.update(
             reference for reference in required_references if reference in serialized
         )
         role_items = [
-            item for item in request.input_items if item.get("role") in {"user", "assistant"}
+            item
+            for item in request.conversation
+            if isinstance(item, (UserMessage, AssistantMessage))
         ]
         # The final role item is the current user message, not retained context. The
         # omission notice describes discarded context and does not itself consume a
         # generated-history item in the rubric count.
         historical = role_items[:-1]
         historical = [
-            item
-            for item in historical
-            if not str(item.get("content", "")).startswith("[Context policy omitted ")
+            item for item in historical if not item.text.startswith("[Context policy omitted ")
         ]
         max_history_items = max(max_history_items, len(historical))
         documents = 0
-        for item in request.input_items:
-            if item.get("type") != "function_call_output":
+        for item in request.conversation:
+            if not isinstance(item, ToolResult):
                 continue
             try:
-                envelope = json.loads(str(item.get("output", "{}")))
+                envelope = json.loads(item.output or "{}")
             except json.JSONDecodeError:
                 continue
             result = envelope.get("tool_result", envelope)
@@ -1317,7 +1321,7 @@ def _summarize_provider_requests(requests: list[Any], case: dict[str, Any]) -> d
             max_characters,
             len(request.instructions)
             + len(serialized)
-            + len(json.dumps(request.tools, ensure_ascii=False))
+            + len(json.dumps([asdict(spec) for spec in request.tools], ensure_ascii=False))
             + len(json.dumps(request.output_schema, ensure_ascii=False)),
         )
     return {

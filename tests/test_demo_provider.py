@@ -8,7 +8,14 @@ from typing import Any
 
 import pytest
 
-from app.llm.base import ProviderRequest, ProviderResponse
+from app.llm.base import (
+    AssistantMessage,
+    ConversationItem,
+    ProviderRequest,
+    ProviderResponse,
+    ToolResult,
+    UserMessage,
+)
 from app.llm.demo_provider import DemoProvider
 from app.schemas.diagnostic import DiagnosticResult
 
@@ -16,13 +23,13 @@ from app.schemas.diagnostic import DiagnosticResult
 def _request(
     message: str,
     *,
-    prior: list[dict[str, Any]] | None = None,
+    prior: list[ConversationItem] | None = None,
     trusted_tenant_id: str | None = "company-a",
 ) -> ProviderRequest:
     return ProviderRequest(
         model="demo",
         instructions="Test instructions",
-        input_items=[*(prior or []), {"role": "user", "content": message}],
+        conversation=[*(prior or []), UserMessage(text=message)],
         tools=[],
         output_schema=DiagnosticResult.model_json_schema(),
         max_output_tokens=1000,
@@ -36,7 +43,7 @@ def _arguments(response: ProviderResponse) -> dict[str, dict[str, Any]]:
 
 def _tool_output(
     *, name: str, data: dict[str, Any] | None = None, error: str | None = None
-) -> dict[str, Any]:
+) -> ToolResult:
     result: dict[str, Any] = {"ok": error is None, "tool_name": name}
     if error is None:
         result["data"] = data or {}
@@ -44,11 +51,10 @@ def _tool_output(
     else:
         result["data"] = None
         result["error"] = {"category": error, "message": "safe error", "retryable": False}
-    return {
-        "type": "function_call_output",
-        "call_id": f"result-{name}",
-        "output": json.dumps({"trust_boundary": "untrusted_tool_result", "tool_result": result}),
-    }
+    return ToolResult(
+        call_id=f"result-{name}",
+        output=json.dumps({"trust_boundary": "untrusted_tool_result", "tool_result": result}),
+    )
 
 
 def _status_output(
@@ -57,7 +63,7 @@ def _status_output(
     *,
     status: str = "running",
     alarm_code: str | None = None,
-) -> dict[str, Any]:
+) -> ToolResult:
     return _tool_output(
         name="get_machine_status",
         data={
@@ -96,8 +102,8 @@ async def test_specific_equipment_descriptor_is_resolved_without_a_default() -> 
     response = await provider.generate(
         replace(
             request,
-            input_items=request.input_items
-            + first.output_items
+            conversation=request.conversation
+            + first.items
             + [_status_output("A1", "SP-400", status="stopped", alarm_code="E217")],
         )
     )
@@ -120,8 +126,8 @@ async def test_narrow_intents_call_only_relevant_tools_and_parse_sensor_window()
     manual = await provider.generate(
         replace(
             manual_request,
-            input_items=manual_request.input_items
-            + manual_status.output_items
+            conversation=manual_request.conversation
+            + manual_status.items
             + [_status_output("A1", "SP-400", status="stopped", alarm_code="E217")],
         )
     )
@@ -133,8 +139,8 @@ async def test_narrow_intents_call_only_relevant_tools_and_parse_sensor_window()
     sensor = await provider.generate(
         replace(
             sensor_request,
-            input_items=sensor_request.input_items
-            + sensor_status.output_items
+            conversation=sensor_request.conversation
+            + sensor_status.items
             + [_status_output("A2", "CP-200", alarm_code="VIB-HI")],
         )
     )
@@ -178,17 +184,17 @@ async def test_alarm_comparison_discloses_mismatch_without_confirming_cause() ->
     request = _request("B1 displayed TRK-99. What does that code mean?")
     first = await provider.generate(request)
     status_items = (
-        request.input_items
-        + first.output_items
+        request.conversation
+        + first.items
         + [_status_output("B1", "CV-120", status="stopped", alarm_code="TRK-04")]
     )
-    manual_call = await provider.generate(replace(request, input_items=status_items))
+    manual_call = await provider.generate(replace(request, conversation=status_items))
     follow_up = (
         status_items
-        + manual_call.output_items
+        + manual_call.items
         + [_tool_output(name="search_manual", data={"matches": [], "returned_chunks": 0})]
     )
-    response = await provider.generate(replace(request, input_items=follow_up))
+    response = await provider.generate(replace(request, conversation=follow_up))
 
     diagnostic = DiagnosticResult.model_validate_json(response.output_text)
     combined = " ".join(diagnostic.missing_information).lower()
@@ -205,12 +211,12 @@ async def test_empty_sensor_result_distinguishes_missing_from_unsupported_metric
     supported_request = _request("Compare A1 motor current for the last hour.")
     supported_first = await provider.generate(supported_request)
     supported_status_items = (
-        supported_request.input_items
-        + supported_first.output_items
+        supported_request.conversation
+        + supported_first.items
         + [_status_output("A1", "SP-400", status="stopped", alarm_code="E217")]
     )
     supported_sensor = await provider.generate(
-        replace(supported_request, input_items=supported_status_items)
+        replace(supported_request, conversation=supported_status_items)
     )
     supported_arguments = _arguments(supported_sensor)["get_sensor_history"]
     assert supported_arguments["start_time"] == "2026-07-21T09:15:00Z"
@@ -218,8 +224,8 @@ async def test_empty_sensor_result_distinguishes_missing_from_unsupported_metric
     supported = await provider.generate(
         replace(
             supported_request,
-            input_items=supported_status_items
-            + supported_sensor.output_items
+            conversation=supported_status_items
+            + supported_sensor.items
             + [
                 _tool_output(
                     name="get_sensor_history",
@@ -237,18 +243,18 @@ async def test_empty_sensor_result_distinguishes_missing_from_unsupported_metric
     unsupported_request = _request("Show B2 acoustic emission for today.")
     unsupported_first = await provider.generate(unsupported_request)
     unsupported_status_items = (
-        unsupported_request.input_items
-        + unsupported_first.output_items
+        unsupported_request.conversation
+        + unsupported_first.items
         + [_status_output("B2", "CNC-500")]
     )
     unsupported_sensor = await provider.generate(
-        replace(unsupported_request, input_items=unsupported_status_items)
+        replace(unsupported_request, conversation=unsupported_status_items)
     )
     unsupported = await provider.generate(
         replace(
             unsupported_request,
-            input_items=unsupported_status_items
-            + unsupported_sensor.output_items
+            conversation=unsupported_status_items
+            + unsupported_sensor.items
             + [
                 _tool_output(
                     name="get_sensor_history",
@@ -278,9 +284,7 @@ async def test_current_condition_uses_machine_default_not_bare_word_current() ->
     response = await provider.generate(
         replace(
             request,
-            input_items=request.input_items
-            + first.output_items
-            + [_status_output("B2", "CNC-500")],
+            conversation=request.conversation + first.items + [_status_output("B2", "CNC-500")],
         )
     )
 
@@ -289,12 +293,9 @@ async def test_current_condition_uses_machine_default_not_bare_word_current() ->
 
 def test_assessment_uses_only_relevant_recent_context_when_requested() -> None:
     items = [
-        {"role": "user", "content": "Old routine lubrication note."},
-        {"role": "assistant", "content": "B2 operator reports rough finish but no alarm."},
-        {
-            "role": "user",
-            "content": "Summarize B2's current condition using relevant recent context.",
-        },
+        UserMessage(text="Old routine lubrication note."),
+        AssistantMessage(text="B2 operator reports rough finish but no alarm."),
+        UserMessage(text="Summarize B2's current condition using relevant recent context."),
     ]
 
     assessment = DemoProvider._assessment_text(items)
@@ -311,8 +312,8 @@ async def test_known_scoped_resource_failure_returns_access_denied_without_data(
     response = await DemoProvider().generate(
         replace(
             request,
-            input_items=request.input_items
-            + first.output_items
+            conversation=request.conversation
+            + first.items
             + [_tool_output(name="get_machine_status", error="tenant_access_denied")],
         )
     )
@@ -341,8 +342,8 @@ async def test_denied_machine_does_not_expose_derived_model_or_metric_arguments(
     denied = await provider.generate(
         replace(
             request,
-            input_items=request.input_items
-            + first.output_items
+            conversation=request.conversation
+            + first.items
             + [_tool_output(name="get_machine_status", error="tenant_access_denied")],
         )
     )

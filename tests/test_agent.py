@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 import pytest
@@ -16,12 +16,15 @@ from app.agent.orchestrator import MaintenanceAgent
 from app.config import Settings
 from app.db.models import AgentRun, ApprovalRequest, ModelUsage, SecurityEvent, WorkOrder
 from app.llm.base import (
+    AssistantMessage,
+    ConversationItem,
     ProviderError,
     ProviderRequest,
     ProviderResponse,
     ProviderToolCall,
     ProviderTransientError,
     ProviderUsage,
+    ToolResult,
 )
 from app.schemas.api import ConversationMessage, DiagnoseRequest
 from app.schemas.common import ErrorCategory, RunStatus, ToolStatus
@@ -42,36 +45,18 @@ def _response(
     metadata: dict[str, Any] | None = None,
 ) -> ProviderResponse:
     calls = tool_calls or []
-    output_items: list[dict[str, Any]]
+    items: list[ConversationItem]
     if calls:
-        output_items = [
-            {
-                "type": "function_call",
-                "call_id": call.call_id,
-                "name": call.name,
-                "arguments": call.arguments,
-            }
-            for call in calls
-        ]
+        items = list(calls)
         output_text = ""
     else:
         output_text = json.dumps(diagnostic) if diagnostic is not None else ""
-        output_items = (
-            [
-                {
-                    "type": "message",
-                    "role": "assistant",
-                    "content": [{"type": "output_text", "text": output_text}],
-                }
-            ]
-            if output_text
-            else []
-        )
+        items = [AssistantMessage(text=output_text)] if output_text else []
     return ProviderResponse(
         request_id=request_id,
         output_text=output_text,
         tool_calls=calls,
-        output_items=output_items,
+        items=items,
         usage=ProviderUsage(input_tokens=input_tokens, output_tokens=output_tokens),
         metadata=metadata or {},
     )
@@ -257,7 +242,10 @@ async def test_agent_executes_native_calls_deduplicates_and_enforces_grounding(
     assert result.tool_trace[1].latency_ms == 0
     assert len(provider.requests) == 2
     assert all(request.max_output_tokens == 777 for request in provider.requests)
-    assert all("tenant_id" not in json.dumps(request.tools) for request in provider.requests)
+    assert all(
+        "tenant_id" not in json.dumps([asdict(spec) for spec in request.tools])
+        for request in provider.requests
+    )
 
 
 @pytest.mark.asyncio
@@ -851,12 +839,10 @@ async def test_agent_safely_returns_invalid_tool_name_and_arguments_to_model(
         ("delete_database", "rejected", "invalid_tool"),
         ("get_machine_status", "rejected", "invalid_arguments"),
     ]
-    final_request_items: Sequence[dict[str, Any]] = provider.requests[-1].input_items
-    tool_outputs = [
-        item for item in final_request_items if item.get("type") == "function_call_output"
-    ]
+    final_request_items: Sequence[ConversationItem] = provider.requests[-1].conversation
+    tool_outputs = [item for item in final_request_items if isinstance(item, ToolResult)]
     assert len(tool_outputs) == 2
-    assert all("Traceback" not in item["output"] for item in tool_outputs)
+    assert all("Traceback" not in item.output for item in tool_outputs)
 
 
 @pytest.mark.asyncio
