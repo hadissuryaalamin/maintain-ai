@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "./components/AppShell";
+import { ApprovalCard } from "./components/ApprovalCard";
 import { AssistantTurn } from "./components/AssistantTurn";
 import { Composer, type ComposerHandle } from "./components/Composer";
 import { ConversationList } from "./components/ConversationList";
@@ -9,7 +10,7 @@ import { MachinePanel } from "./components/MachinePanel";
 import { Thread } from "./components/Thread";
 import { useMachines, type MachinesState } from "./hooks/useMachines";
 import { ConversationProvider, useConversation } from "./state/ConversationProvider";
-import { IdentityProvider } from "./state/identity";
+import { IdentityProvider, useIdentity } from "./state/identity";
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -44,6 +45,7 @@ function RailButton({ icon, label, onClick }: { icon: string; label: string; onC
 
 function Workspace({ machines }: { machines: MachinesState }) {
   const conversation = useConversation();
+  const { client } = useIdentity();
   const composer = useRef<ComposerHandle>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -156,6 +158,9 @@ function Workspace({ machines }: { machines: MachinesState }) {
               );
             }}
             onFollowUp={() => composer.current?.focus()}
+            renderApproval={(approval) => (
+              <ApprovalCard key={approval.approval_id} approval={approval} client={client} />
+            )}
           />
         )}
       />
