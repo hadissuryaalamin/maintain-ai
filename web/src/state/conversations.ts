@@ -54,8 +54,13 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Mirrors app/prediction_requests.py: prediction requests are recognised only by their prefix,
+// and are not tied to a machine, so they must reach the API unchanged.
+const PREDICTION_PREFIX =
+  /^\s*(?:please\s+)?(?:predict_failure_risk|predict\s+(?:machine\s+)?failure|failure\s+prediction|prediksi\s+kegagalan)\b/i;
+
 export function withMachineContext(text: string, machineId: string | null): string {
-  if (!machineId) return text;
+  if (!machineId || PREDICTION_PREFIX.test(text.split("{", 1)[0] ?? "")) return text;
   const pattern = new RegExp(`(^|[^A-Za-z0-9_-])${escapeRegExp(machineId)}(?![A-Za-z0-9_])`, "i");
   return pattern.test(text) ? text : `[Machine ${machineId}] ${text}`;
 }
