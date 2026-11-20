@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     data_path: Path = Path("data")
     auto_seed: bool = True
 
+    failure_prediction_enabled: bool = False
+    failure_prediction_base_url: str = "http://127.0.0.1:8003"
+    failure_prediction_timeout_seconds: float = Field(default=5, gt=0, le=30, allow_inf_nan=False)
+
     max_agent_steps: int = Field(default=6, ge=1, le=20)
     max_tool_calls: int = Field(default=10, ge=1, le=50)
     request_timeout_seconds: float = Field(default=45, gt=0, le=300)

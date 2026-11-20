@@ -22,6 +22,7 @@ from app.db.repositories import (
 )
 from app.retrieval.service import RetrievalService
 from app.schemas.common import ErrorCategory, ToolStatus
+from app.schemas.prediction import FailurePredictionInput, FailureRiskToolOutput
 from app.schemas.tools import (
     CreateWorkOrderInput,
     CreateWorkOrderOutput,
@@ -41,6 +42,7 @@ from app.schemas.tools import (
 from app.security.context import AuthContext, log_security_event
 from app.tools.base import ToolDefinition, TransientToolError
 from app.tools.maintenance import MaintenanceToolHandlers
+from app.tools.prediction import FailurePredictionClient, FailurePredictionToolHandler
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,6 +275,8 @@ def build_tool_registry(
     session: Session,
     context: AuthContext,
     settings: Settings | None = None,
+    *,
+    prediction_client: FailurePredictionClient | None = None,
 ) -> ToolRegistry:
     settings = settings or get_settings()
     repository = MaintenanceRepository(session, context)
@@ -330,6 +334,28 @@ def build_tool_registry(
             requires_approval=True,
         ),
     ]
+    if settings.failure_prediction_enabled:
+        client = prediction_client or FailurePredictionClient(
+            base_url=settings.failure_prediction_base_url,
+            timeout_seconds=settings.failure_prediction_timeout_seconds,
+        )
+        prediction_handler = FailurePredictionToolHandler(client)
+        definitions.append(
+            ToolDefinition(
+                name="predict_failure_risk",
+                description=(
+                    "Score failure evidence for six explicitly supplied AI4I-compatible inputs. "
+                    "Requires product type L/M/H, air/process temperature in kelvin, rotational "
+                    "speed in rpm, torque in Nm, and tool wear in minutes. Never invent missing "
+                    "values, assume product type, or substitute unrelated sensor metrics. "
+                    "Synthetic-data demonstration: not a calibrated physical failure risk, "
+                    "a diagnosis, or evidence that equipment is safe."
+                ),
+                input_model=FailurePredictionInput,
+                output_model=FailureRiskToolOutput,
+                handler=prediction_handler.predict_failure_risk,
+            )
+        )
     return ToolRegistry(
         session=session,
         context=context,

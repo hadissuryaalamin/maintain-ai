@@ -184,6 +184,42 @@ docs/         architecture, security, MCP, deployment, operations, and demo scri
 Operational guidance lives in [operations](docs/operations.md). Security reports should follow
 [SECURITY.md](SECURITY.md). Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Optional failure-evidence prediction tool
+
+The read-only `predict_failure_risk` tool can call the separate `maintain-predict`
+API through the laptop's Session Manager tunnel. It is disabled by default, so
+ordinary offline runs retain the original six tools and make no prediction requests.
+To enable it for a locally running maintain-ai process, set:
+
+```powershell
+$env:FAILURE_PREDICTION_ENABLED = "true"
+$env:FAILURE_PREDICTION_BASE_URL = "http://127.0.0.1:8003"
+$env:FAILURE_PREDICTION_TIMEOUT_SECONDS = "5"
+```
+
+Start EC2 and the Session Manager tunnel manually, then restart maintain-ai to load
+these settings. The URL is operator configuration, never a model-controlled argument.
+Inside Docker, `127.0.0.1` refers to that container; the laptop tunnel address is not
+usable unchanged from a Compose service.
+
+The tool requires six explicit inputs: `type` (L/M/H), `air_temp_k`,
+`process_temp_k`, `rpm`, `torque_nm`, and `tool_wear_min`. Do not substitute vibration
+or other sensor metrics, invent product type, or infer missing measurements. It
+validates the response policy, threshold, and label/score consistency and returns an
+application-authored source reference for grounded observations. Timeout or upstream
+errors produce tool failures, never a fabricated prediction. Existing registry retry
+limits apply to transient failures; HTTP timeouts are per network operation.
+
+The score comes from synthetic AI4I data and is not a calibrated physical failure
+probability, a diagnosis, or a safety clearance. The model-facing tool name retains
+`risk` for the planned interface; that name does not change these limitations.
+
+The tool is registered for the agent's provider schemas when enabled. The deterministic
+DemoProvider has not yet been taught to select it automatically; scenario cases and
+an end-to-end agent test are the next stage. MCP exposure is unchanged. Existing
+30-case evaluation results above predate this integration and are not evidence of
+prediction-tool selection quality.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

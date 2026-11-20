@@ -19,6 +19,7 @@ from app.schemas.diagnostic import (
     RecommendedAction,
     SourceType,
 )
+from app.schemas.prediction import FailureRiskToolOutput
 from app.schemas.tools import (
     DowntimeCostOutput,
     MachineStatusOutput,
@@ -83,6 +84,18 @@ def observations_from_tool_result(tool_name: str, data: dict[str, Any]) -> list[
     """
 
     try:
+        if tool_name == "predict_failure_risk":
+            prediction = FailureRiskToolOutput.model_validate(data)
+            statement = (
+                f"The synthetic AI4I model returned failure-evidence score "
+                f"{prediction.failure_score:.8g}, predicted class {prediction.predicted_label}, "
+                f"and threshold {prediction.threshold} for the supplied inputs under "
+                f"{prediction.target_policy}. This is not a calibrated physical failure "
+                "probability, an observed machine condition, or a diagnosis."
+            )
+            observation = _observation(statement, SourceType.TOOL, prediction.source_reference)
+            return [observation] if observation else []
+
         if tool_name == "get_machine_status":
             machine_status = MachineStatusOutput.model_validate(data)
             details = (
