@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     demo_model: str = "demo-maintenance-v1"
     model_pricing_path: Path = Path("config/model_pricing.yaml")
     data_path: Path = Path("data")
+    web_dist_path: Path = Path("web/dist")
     auto_seed: bool = True
 
     failure_prediction_enabled: bool = False
