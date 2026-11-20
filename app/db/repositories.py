@@ -62,6 +62,41 @@ class MaintenanceRepository:
         )
         raise TenantAccessDenied("machine not found")
 
+    def list_machines(self) -> list[Machine]:
+        statement = (
+            select(Machine).where(Machine.tenant_id == self.context.tenant_id).order_by(Machine.id)
+        )
+        return list(self.session.scalars(statement))
+
+    def latest_sensor_readings(
+        self, *, machine_id: str, limit: int
+    ) -> dict[str, list[SensorReading]]:
+        """Return the newest ``limit`` readings per metric, each list oldest-first."""
+        self.get_machine(machine_id)
+        metrics = self.session.scalars(
+            select(SensorReading.metric)
+            .where(
+                SensorReading.tenant_id == self.context.tenant_id,
+                SensorReading.machine_id == machine_id,
+            )
+            .distinct()
+            .order_by(SensorReading.metric)
+        )
+        result: dict[str, list[SensorReading]] = {}
+        for metric in list(metrics):
+            newest_first = self.session.scalars(
+                select(SensorReading)
+                .where(
+                    SensorReading.tenant_id == self.context.tenant_id,
+                    SensorReading.machine_id == machine_id,
+                    SensorReading.metric == metric,
+                )
+                .order_by(SensorReading.recorded_at.desc(), SensorReading.id.desc())
+                .limit(limit)
+            )
+            result[metric] = list(reversed(list(newest_first)))
+        return result
+
     def get_sensor_history(
         self,
         *,

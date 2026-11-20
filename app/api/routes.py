@@ -2,22 +2,28 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.agent.orchestrator import MaintenanceAgent
 from app.api.dependencies import get_auth_context, get_session
-from app.db.models import AgentRun
+from app.db.models import AgentRun, Machine, SensorReading
+from app.db.repositories import MaintenanceRepository, TenantAccessDenied
 from app.schemas.api import (
     AnalyticsSummary,
     ApprovalDecisionRequest,
     ApprovalDecisionResponse,
     DiagnoseRequest,
     DiagnoseResponse,
+    MachineSensors,
+    MachineSummary,
     RunRecord,
+    SensorPointOut,
+    SensorSeries,
 )
 from app.security.approval import (
     ApprovalConflict,
@@ -168,3 +174,96 @@ def analytics_runs(
         )
         for run in runs
     ]
+
+
+def _parse_timestamp(value: object) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _optional_str(value: object) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def _machine_summary(machine: Machine) -> MachineSummary:
+    metadata = machine.metadata_json or {}
+    return MachineSummary(
+        id=machine.id,
+        name=machine.name,
+        model=machine.model,
+        line=machine.line,
+        status=machine.status,
+        condition=_optional_str(metadata.get("condition")),
+        active_alarm=machine.alarm_code,
+        criticality=_optional_str(metadata.get("criticality")),
+        hourly_downtime_cost=machine.hourly_downtime_cost,
+        cost_currency=_optional_str(metadata.get("cost_currency")),
+        last_status_at=_parse_timestamp(metadata.get("last_status_at")),
+    )
+
+
+def _sensor_point(reading: SensorReading) -> SensorPointOut:
+    return SensorPointOut(
+        value=None if reading.value is None else float(reading.value),
+        quality=reading.quality,
+        recorded_at=reading.recorded_at,
+    )
+
+
+def _machine_not_found(session: Session) -> HTTPException:
+    # Persist the audit event written by the repository before the request unwinds.
+    session.commit()
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Machine not found.")
+
+
+@router.get("/machines", response_model=list[MachineSummary])
+def list_machines(
+    session: Annotated[Session, Depends(get_session)],
+    context: Annotated[AuthContext, Depends(get_auth_context)],
+) -> list[MachineSummary]:
+    repository = MaintenanceRepository(session, context)
+    return [_machine_summary(machine) for machine in repository.list_machines()]
+
+
+@router.get("/machines/{machine_id}", response_model=MachineSummary)
+def get_machine(
+    machine_id: str,
+    session: Annotated[Session, Depends(get_session)],
+    context: Annotated[AuthContext, Depends(get_auth_context)],
+) -> MachineSummary:
+    try:
+        machine = MaintenanceRepository(session, context).get_machine(machine_id)
+    except TenantAccessDenied as exc:
+        raise _machine_not_found(session) from exc
+    return _machine_summary(machine)
+
+
+@router.get("/machines/{machine_id}/sensors", response_model=MachineSensors)
+def get_machine_sensors(
+    machine_id: str,
+    session: Annotated[Session, Depends(get_session)],
+    context: Annotated[AuthContext, Depends(get_auth_context)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 12,
+) -> MachineSensors:
+    try:
+        grouped = MaintenanceRepository(session, context).latest_sensor_readings(
+            machine_id=machine_id, limit=limit
+        )
+    except TenantAccessDenied as exc:
+        raise _machine_not_found(session) from exc
+    series = []
+    for metric, readings in grouped.items():
+        points = [_sensor_point(reading) for reading in readings]
+        series.append(
+            SensorSeries(
+                metric=metric,
+                unit=readings[-1].unit if readings else "",
+                latest=points[-1] if points else None,
+                readings=points,
+            )
+        )
+    return MachineSensors(machine_id=machine_id, series=series)

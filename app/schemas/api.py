@@ -110,3 +110,35 @@ class AnalyticsSummary(ApiSchema):
     cost_by_task_type: dict[str, Decimal | None]
     tool_frequency: dict[str, int]
     optimization_comparison: dict[str, dict[str, float | int | None]]
+
+
+class MachineSummary(ApiSchema):
+    id: str
+    name: str
+    model: str
+    line: str
+    status: str
+    condition: str | None = None
+    active_alarm: str | None = None
+    criticality: str | None = None
+    hourly_downtime_cost: Decimal
+    cost_currency: str | None = None
+    last_status_at: datetime | None = None
+
+
+class SensorPointOut(ApiSchema):
+    value: float | None
+    quality: str
+    recorded_at: datetime
+
+
+class SensorSeries(ApiSchema):
+    metric: str
+    unit: str
+    latest: SensorPointOut | None
+    readings: list[SensorPointOut]
+
+
+class MachineSensors(ApiSchema):
+    machine_id: str
+    series: list[SensorSeries]
