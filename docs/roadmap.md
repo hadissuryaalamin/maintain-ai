@@ -5,6 +5,49 @@ format and the OpenAI and Claude adapters are done. The two items below are the 
 work, in the recommended order: grounding first, so the single frontend can show real model
 output and compare providers.
 
+## Product vision: a conversational assistant with an evidence panel
+
+The owner's target experience is a chatbot that feels like ChatGPT or Claude. The technician
+asks in their own words, and the assistant answers in natural, conversational prose in the
+centre of the screen, with follow-up questions flowing as a normal conversation. The structured
+"behind the answer" detail moves out of the chat into a **right-hand panel** for the selected
+answer.
+
+```
+┌──────────┬───────────────────────────────┬──────────────────────────┐
+│ History  │ CHAT (natural conversation)   │ ANSWER DETAIL (panel)    │
+│          │                               │                          │
+│          │ Tech: Pump A2 grinding noise, │ Inspection steps         │
+│          │ what should I check first?    │  1. Lockout/tagout first │
+│          │                               │  2. Check tank level     │
+│          │ AI: Vibration on A2 rose from │  3. Check suction line   │
+│          │ 4.6 to 7.8 mm/s while suction │ Tools used               │
+│          │ pressure fell. This matches   │  ✓ machine status  12 ms │
+│          │ the March incident... Check   │  ✓ sensor history  30 ms │
+│          │ the supply tank level first,  │ Reasoning summary        │
+│          │ and don't open the housing    │  vibration ↑ + suction ↓ │
+│          │ before lockout/tagout.        │  → restricted inlet      │
+│          │ [composer]                    │ Evidence with sources    │
+└──────────┴───────────────────────────────┴──────────────────────────┘
+```
+
+What this implies for the two work items:
+
+- **Two outputs per answer.** The model returns a conversational reply for the chat *and* the
+  structured `DiagnosticResult` for the panel (steps, causes, evidence). The reply is the part
+  technicians read most, so it is checked too: figures and facts in the prose must match the
+  run's evidence (item 1), otherwise the reply falls back to a grounded application summary.
+- **Reasoning means a short, cited reasoning summary** (e.g. "vibration ↑ + suction ↓ →
+  restricted inlet; source: sensor history, INC-A-004"), never raw hidden chain-of-thought,
+  consistent with the existing prompt policy.
+- **The right panel changes role.** Today it shows machine details; it becomes "answer detail"
+  (inspection steps with `Requires shutdown` badges, tools with status and latency, reasoning
+  summary, evidence cards, safety notice, run link). Machine status stays in the top bar and
+  machine details move to a tab or drawer. The approval card for draft work orders stays
+  visible where the technician acts on it.
+- **Mobile/tablet.** The panel becomes a "Details" sheet opened from each answer.
+- Item 2 (Insights and run trace) then links naturally from the panel's run link.
+
 ## 1. Model-authored answers with enforced citations (grounding policy)
 
 **Problem.** `app/agent/grounding.py` (`enforce_grounding`) replaces every model-authored field
