@@ -9,15 +9,22 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
 from app.llm.base import (
+    AssistantMessage,
+    ConversationItem,
     ProviderRequest,
     ProviderResponse,
     ProviderToolCall,
     ProviderUsage,
+    ToolCall,
+    ToolResult,
+    UserMessage,
+    conversation_characters,
 )
 from app.prediction_requests import (
     PREDICTION_INPUT_GUIDANCE,
@@ -80,14 +87,11 @@ class DemoProvider:
 
     async def generate(self, request: ProviderRequest) -> ProviderResponse:
         request_id = f"demo-{uuid4()}"
-        outputs = [
-            item for item in request.input_items if item.get("type") == "function_call_output"
-        ]
-        message = self._current_user_text(request.input_items)
-        machine_id = self._resolve_machine(
-            request.input_items, trusted_tenant_id=request.trusted_tenant_id
-        )
-        called_names = self._called_tool_names(request.input_items)
+        items = request.conversation
+        outputs = [item for item in items if isinstance(item, ToolResult)]
+        message = self._current_user_text(items)
+        machine_id = self._resolve_machine(items, trusted_tenant_id=request.trusted_tenant_id)
+        called_names = self._called_tool_names(items)
 
         if is_prediction_request(message):
             return self._prediction_response(request_id, request, message, outputs, called_names)
@@ -121,8 +125,8 @@ class DemoProvider:
             )
 
         diagnostic, terminal_status = self._build_diagnostic(
-            request.input_items,
-            message=self._assessment_text(request.input_items),
+            items,
+            message=self._assessment_text(items),
             machine_id=machine_id,
         )
         return self._diagnostic_response(
@@ -137,10 +141,10 @@ class DemoProvider:
         request_id: str,
         request: ProviderRequest,
         message: str,
-        outputs: list[dict[str, Any]],
+        outputs: list[ToolResult],
         called_names: set[str],
     ) -> ProviderResponse:
-        enabled = any(tool.get("name") == "predict_failure_risk" for tool in request.tools)
+        enabled = any(tool.name == "predict_failure_risk" for tool in request.tools)
         guidance = PREDICTION_INPUT_GUIDANCE
         terminal_status = "needs_clarification"
         if enabled:
@@ -191,35 +195,23 @@ class DemoProvider:
         request: ProviderRequest,
         calls: list[ProviderToolCall],
     ) -> ProviderResponse:
-        output_items = [
-            {
-                "type": "function_call",
-                "call_id": call.call_id,
-                "name": call.name,
-                "arguments": call.arguments,
-            }
-            for call in calls
-        ]
+        items: list[ConversationItem] = list(calls)
         return ProviderResponse(
             request_id=request_id,
             output_text="",
             tool_calls=calls,
-            output_items=output_items,
-            usage=self._usage(request, output_items),
+            items=items,
+            usage=self._usage(request, items),
         )
 
     @staticmethod
-    def _called_tool_names(items: list[dict[str, Any]]) -> set[str]:
-        names = {
-            str(item.get("name"))
-            for item in items
-            if item.get("type") == "function_call" and item.get("name")
-        }
+    def _called_tool_names(items: Sequence[ConversationItem]) -> set[str]:
+        names = {item.name for item in items if isinstance(item, ToolCall) and item.name}
         for item in items:
-            if item.get("type") != "function_call_output":
+            if not isinstance(item, ToolResult):
                 continue
             try:
-                payload = json.loads(str(item.get("output", "{}")))
+                payload = json.loads(item.output or "{}")
             except (json.JSONDecodeError, TypeError):
                 continue
             result = payload.get("tool_result", payload)
@@ -228,12 +220,10 @@ class DemoProvider:
         return names
 
     @staticmethod
-    def _successful_tool_data(
-        outputs: list[dict[str, Any]], tool_name: str
-    ) -> dict[str, Any] | None:
+    def _successful_tool_data(outputs: list[ToolResult], tool_name: str) -> dict[str, Any] | None:
         for item in reversed(outputs):
             try:
-                payload = json.loads(str(item.get("output", "{}")))
+                payload = json.loads(item.output or "{}")
             except (json.JSONDecodeError, TypeError):
                 continue
             result = payload.get("tool_result", payload)
@@ -251,27 +241,23 @@ class DemoProvider:
         terminal_status: str = "completed",
     ) -> ProviderResponse:
         output_text = diagnostic.model_dump_json()
-        message_item = {
-            "type": "message",
-            "role": "assistant",
-            "content": [{"type": "output_text", "text": output_text}],
-        }
+        items: list[ConversationItem] = [AssistantMessage(text=output_text)]
         return ProviderResponse(
             request_id=request_id,
             output_text=output_text,
             tool_calls=[],
-            output_items=[message_item],
-            usage=self._usage(request, [message_item]),
+            items=items,
+            usage=self._usage(request, items),
             metadata={"terminal_status": terminal_status},
         )
 
     @staticmethod
-    def _current_user_text(items: list[dict[str, Any]]) -> str:
-        messages = [str(item.get("content", "")) for item in items if item.get("role") == "user"]
+    def _current_user_text(items: Sequence[ConversationItem]) -> str:
+        messages = [item.text for item in items if isinstance(item, UserMessage)]
         return messages[-1] if messages else ""
 
     @classmethod
-    def _assessment_text(cls, items: list[dict[str, Any]]) -> str:
+    def _assessment_text(cls, items: Sequence[ConversationItem]) -> str:
         """Include a few relevant recent turns only when the user explicitly refers to them."""
 
         current = cls._current_user_text(items)
@@ -281,11 +267,9 @@ class DemoProvider:
             current,
         ):
             return current
-        prior = [
-            str(item.get("content", ""))
-            for item in items
-            if item.get("role") in {"user", "assistant"}
-        ][:-1]
+        prior = [item.text for item in items if isinstance(item, (UserMessage, AssistantMessage))][
+            :-1
+        ]
         relevant = [
             content[:2000]
             for content in reversed(prior)
@@ -300,7 +284,7 @@ class DemoProvider:
     @classmethod
     def _resolve_machine(
         cls,
-        items: list[dict[str, Any]],
+        items: Sequence[ConversationItem],
         *,
         trusted_tenant_id: str | None,
     ) -> str | None:
@@ -346,9 +330,7 @@ class DemoProvider:
         if not refers_to_context:
             return None
         prior_messages = [
-            str(item.get("content", ""))
-            for item in items
-            if item.get("role") in {"user", "assistant"}
+            item.text for item in items if isinstance(item, (UserMessage, AssistantMessage))
         ][:-1]
         for prior in reversed(prior_messages):
             identifiers = cls._machine_ids(prior)
@@ -704,7 +686,7 @@ class DemoProvider:
     @classmethod
     def _build_diagnostic(
         cls,
-        items: list[dict[str, Any]],
+        items: Sequence[ConversationItem],
         *,
         message: str,
         machine_id: str | None,
@@ -719,10 +701,10 @@ class DemoProvider:
         errors: list[tuple[str, str]] = []
 
         for item in items:
-            if item.get("type") != "function_call_output":
+            if not isinstance(item, ToolResult):
                 continue
             try:
-                payload = json.loads(str(item.get("output", "{}")))
+                payload = json.loads(item.output or "{}")
             except (json.JSONDecodeError, TypeError):
                 missing.append("A tool returned an unreadable result; no claim was based on it.")
                 errors.append(("unknown", "invalid_result"))
@@ -1156,9 +1138,9 @@ class DemoProvider:
         return list(dict.fromkeys(values))
 
     @staticmethod
-    def _usage(request: ProviderRequest, output: list[dict[str, Any]]) -> ProviderUsage:
-        input_chars = len(request.instructions) + len(json.dumps(request.input_items))
-        output_chars = len(json.dumps(output))
+    def _usage(request: ProviderRequest, output: Sequence[ConversationItem]) -> ProviderUsage:
+        input_chars = len(request.instructions) + conversation_characters(request.conversation)
+        output_chars = conversation_characters(output)
         return ProviderUsage(
             input_tokens=max(1, input_chars // 4),
             output_tokens=max(1, output_chars // 4),

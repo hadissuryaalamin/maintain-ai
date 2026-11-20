@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from dataclasses import asdict
 from uuid import uuid4
 
 import pytest
@@ -48,14 +49,12 @@ def _add_run(session: Session, context: AuthContext) -> AgentRun:
 def test_provider_tool_schemas_are_strict_and_exclude_authority(
     registry: ToolRegistry,
 ) -> None:
-    schemas = registry.provider_schemas
+    specs = registry.tool_specs
 
-    assert {schema["name"] for schema in schemas} == EXPECTED_TOOLS
-    assert all(schema["type"] == "function" for schema in schemas)
-    assert all(schema["strict"] is True for schema in schemas)
-    assert all(schema["parameters"]["additionalProperties"] is False for schema in schemas)
+    assert {spec.name for spec in specs} == EXPECTED_TOOLS
+    assert all(spec.parameters["additionalProperties"] is False for spec in specs)
 
-    serialized = json.dumps(schemas)
+    serialized = json.dumps([asdict(spec) for spec in specs])
     for forbidden in ("tenant_id", "user_id", "approval_granted", "idempotency_key"):
         assert forbidden not in serialized
 

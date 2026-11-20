@@ -130,15 +130,31 @@ order for human approval but cannot control equipment. Optional build-time setti
 `VITE_DEMO_TENANT_ID`, `VITE_DEMO_USER_ID`, `VITE_DASHBOARD_URL` (each answer links to the dashboard with its run id; paste the id into
 the "Run and tool trace" tab).
 
-## Use the live OpenAI provider
+## Use a live LLM provider
 
-Copy `.env.example`, set `LLM_PROVIDER=openai` and `OPENAI_API_KEY`, and keep the configured
-model IDs/pricing under review. Live calls use the provider SDK directly and are never part of
-the default test run. The implementation follows the official Responses API patterns for
+The agent loop speaks an app-owned, provider-neutral conversation format
+(`UserMessage`, `AssistantMessage`, `ToolCall`, `ToolResult`, `ToolSpec` in
+`app/llm/base.py`). Each vendor adapter translates that format to its own API, and every
+provider must return the same `DiagnosticResult` JSON, which then goes through the same
+validation, grounding and safety policy. Switching vendor is configuration only: edit `.env`
+and restart the API.
+
+| `LLM_PROVIDER` | Key | Suggested `DEFAULT_MODEL` / `SMALL_MODEL` | Adapter |
+|---|---|---|---|
+| `demo` | none | (ignored; offline rules) | `app/llm/demo_provider.py` |
+| `openai` | `OPENAI_API_KEY` | `gpt-5.6-terra` / `gpt-5.6-luna` | Responses API, strict JSON-schema output |
+| `anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-5-5` / `claude-haiku-5-5` | Messages API; the final answer arrives through a `submit_diagnostic` tool (tool choice `auto` plus a protocol instruction) |
+
+API usage is billed per token from the vendor's API account. A ChatGPT or Claude app
+subscription does not include API credit. When credit runs out, runs fail with
+"insufficient credit" (Claude) or a provider rejection (OpenAI) rather than a fabricated answer.
+Live calls are never part of the default test run. The OpenAI adapter follows the official
+Responses API patterns for
 [function calling](https://developers.openai.com/api/docs/guides/function-calling) and
 [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
-Configured prices are dated snapshots linked to their official model pages; reported costs are
-estimates, not invoices.
+Configured prices in `config/model_pricing.yaml` are dated snapshots linked to official pricing
+pages; reported costs are estimates, not invoices. Providers that only speak the OpenAI Chat
+Completions API (for example DeepSeek) need one more adapter on the same neutral format.
 
 ## Verification
 

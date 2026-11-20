@@ -20,6 +20,7 @@ from app.db.repositories import (
     TenantAccessDenied,
     TenantResourceNotFound,
 )
+from app.llm.base import ToolSpec
 from app.retrieval.service import RetrievalService
 from app.schemas.common import ErrorCategory, ToolStatus
 from app.schemas.prediction import FailurePredictionInput, FailureRiskToolOutput
@@ -67,8 +68,8 @@ class ToolRegistry:
         self.max_retries = max_retries
 
     @property
-    def provider_schemas(self) -> list[dict[str, Any]]:
-        return [definition.provider_schema() for definition in self._definitions.values()]
+    def tool_specs(self) -> list[ToolSpec]:
+        return [definition.spec() for definition in self._definitions.values()]
 
     @property
     def names(self) -> set[str]:

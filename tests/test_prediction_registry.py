@@ -48,7 +48,7 @@ async def test_enabled_tool_returns_prediction_and_grounded_source(session, cont
     definition = registry.definition("predict_failure_risk")
     assert definition is not None
     assert definition.read_only and not definition.requires_approval
-    schema = definition.provider_schema()["parameters"]
+    schema = definition.spec().parameters
     assert set(schema["required"]) == set(INPUT)
     assert schema["additionalProperties"] is False
     assert len(registry.names) == 7

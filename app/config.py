@@ -24,9 +24,11 @@ class Settings(BaseSettings):
     app_name: str = "Industrial AI Maintenance Operations Copilot"
     app_env: Literal["development", "test", "production"] = "development"
     database_url: str = "sqlite:///./maintenance_copilot.db"
-    llm_provider: Literal["demo", "openai"] = "demo"
+    llm_provider: Literal["demo", "openai", "anthropic"] = "demo"
     openai_api_key: SecretStr | None = None
     openai_base_url: str | None = None
+    anthropic_api_key: SecretStr | None = None
+    anthropic_base_url: str | None = None
     default_model: str = "gpt-5.6-terra"
     small_model: str = "gpt-5.6-luna"
     demo_model: str = "demo-maintenance-v1"

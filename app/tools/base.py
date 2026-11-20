@@ -8,6 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from app.llm.base import ToolSpec
+
 
 class TransientToolError(RuntimeError):
     """A tool error which may be retried within the configured small limit."""
@@ -29,15 +31,12 @@ class ToolDefinition:
     read_only: bool = True
     requires_approval: bool = False
 
-    def provider_schema(self) -> dict[str, Any]:
-        schema = _strict_provider_schema(self.input_model.model_json_schema())
-        return {
-            "type": "function",
-            "name": self.name,
-            "description": self.description,
-            "parameters": schema,
-            "strict": True,
-        }
+    def spec(self) -> ToolSpec:
+        return ToolSpec(
+            name=self.name,
+            description=self.description,
+            parameters=_strict_provider_schema(self.input_model.model_json_schema()),
+        )
 
 
 def _strict_provider_schema(value: Any) -> Any:
