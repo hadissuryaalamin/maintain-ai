@@ -21,3 +21,4 @@ evals/reports/*.actual.*
 .superpowers/
 web/node_modules/
 web/dist/
+*.tsbuildinfo

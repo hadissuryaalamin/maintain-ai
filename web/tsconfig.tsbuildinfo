@@ -1,1 +1,0 @@
-{"root":["./src/main.tsx","./src/api/client.test.ts","./src/api/client.ts","./src/api/types.ts","./src/test/fixtures.ts","./src/test/setup.ts","./vite.config.ts","./tailwind.config.ts"],"version":"5.7.2"}
