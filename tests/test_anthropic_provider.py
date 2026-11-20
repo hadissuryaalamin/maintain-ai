@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from itertools import pairwise
 from typing import Any
 
 import anthropic
@@ -217,7 +218,7 @@ async def test_leading_assistant_message_is_preceded_by_user() -> None:
     sent = messages.calls[0]["messages"]
     assert sent[0]["role"] == "user"
     roles = [message["role"] for message in sent]
-    assert all(first != second for first, second in zip(roles, roles[1:], strict=False))
+    assert all(first != second for first, second in pairwise(roles))
     assert sent[-1] == {"role": "user", "content": [{"type": "text", "text": "Now?"}]}
 
 
