@@ -31,6 +31,14 @@ from app.llm.base import (
 )
 
 FINAL_TOOL = "submit_diagnostic"
+# Current Claude models reject forced tool choice, so the adapter states the protocol in the
+# system prompt and lets the model choose ("auto"). A reply without the final-answer tool has no
+# output_text and fails the loop's normal invalid-output check; nothing is guessed from prose.
+_FINAL_TOOL_INSTRUCTION = (
+    "\n\nResponse protocol: use the available tools to gather evidence. When you are ready to "
+    f"answer, call the `{FINAL_TOOL}` tool exactly once with the complete diagnostic as its "
+    "input. Never write the final answer as plain text."
+)
 _FINAL_TOOL_DESCRIPTION = (
     "Submit the final maintenance diagnostic. Call this exactly once, only after gathering "
     "the evidence you need with the other tools. Its input is the complete answer."
@@ -117,10 +125,10 @@ class AnthropicMessagesProvider:
         try:
             response = await self.client.messages.create(
                 model=request.model,
-                system=request.instructions,
+                system=request.instructions + _FINAL_TOOL_INSTRUCTION,
                 messages=to_anthropic_messages(request.conversation),
                 tools=to_anthropic_tools(request.tools, request.output_schema),
-                tool_choice={"type": "any"},
+                tool_choice={"type": "auto"},
                 max_tokens=request.max_output_tokens,
             )
         except anthropic.APITimeoutError as exc:
@@ -131,6 +139,12 @@ class AnthropicMessagesProvider:
             raise _status_error(exc) from exc
         except Exception as exc:
             raise ProviderError("model provider request failed") from exc
+
+        if getattr(response, "stop_reason", None) == "max_tokens":
+            # A cut-off reply carries partial tool input; never pass it on as an answer.
+            raise ProviderError(
+                "model output was cut off by the output token limit; raise MAX_OUTPUT_TOKENS"
+            )
 
         tool_calls: list[ToolCall] = []
         final_input: Any = None

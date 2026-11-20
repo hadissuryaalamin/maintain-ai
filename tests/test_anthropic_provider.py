@@ -125,9 +125,12 @@ async def test_tools_include_final_answer_tool_and_force_tool_use() -> None:
     await provider.generate(_request([UserMessage(text="Check A2")]))
     call = messages.calls[0]
     assert call["model"] == "claude-sonnet-5-5"
-    assert call["system"] == "System safety policy."
+    assert call["system"].startswith("System safety policy.")
+    assert FINAL_TOOL in call["system"]
     assert call["max_tokens"] == 432
-    assert call["tool_choice"] == {"type": "any"}
+    # Forced tool choice ("any"/"tool") is rejected by current Claude models; the adapter
+    # lets the model choose and instructs it to answer through the final-answer tool.
+    assert call["tool_choice"] == {"type": "auto"}
     assert call["tools"] == [
         {"name": "get_machine_status", "description": "Read status.", "input_schema": PARAMETERS},
         {
@@ -399,3 +402,14 @@ def test_claude_models_are_priced() -> None:
     haiku = catalog.calculate(provider="anthropic", model="claude-haiku-5-5", usage=usage, at=at)
     assert sonnet.total_cost == Decimal("0.007")
     assert haiku.total_cost == Decimal("0.00035")
+
+
+@pytest.mark.asyncio
+async def test_truncated_reply_is_a_clear_provider_error() -> None:
+    reply = _final({"incident_summary": "cut"})
+    reply.stop_reason = "max_tokens"  # type: ignore[attr-defined]
+    provider, _ = _provider(reply)
+    with pytest.raises(ProviderError) as raised:
+        await provider.generate(_request([UserMessage(text="Check A2")]))
+    assert "MAX_OUTPUT_TOKENS" in str(raised.value)
+    assert not raised.value.retryable
